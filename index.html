@@ -1,0 +1,3210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UPGRADER</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { background: #0d0d10; color: #fff; font-family: 'Segoe UI', -apple-system, Roboto, sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(245,197,24,0.08), transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .app { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding-bottom: 110px; }
+  .topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: rgba(13,13,16,0.92);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  position: sticky; top: 0; z-index: 100;
+}
+.online-badge { display: flex; align-items: center; gap: 10px; font-size: 1rem; font-weight: 800; color: #fff; }
+.online-badge .bp-icon { width: 22px; height: 22px; background: radial-gradient(circle at 35% 35%, #f5c518, #d4a017); border-radius: 50%; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.balance-top {
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, rgba(245,197,24,0.15), rgba(212,160,23,0.1));
+  border: 1.5px solid rgba(245,197,24,0.5);
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 0.92rem; font-weight: 900; color: #ffd83d; letter-spacing: 0.3px;
+  box-shadow: 0 0 12px rgba(245,197,24,0.25), inset 0 0 10px rgba(245,197,24,0.1);
+  position: relative; overflow: hidden;
+}
+.balance-top::before {
+  content: ''; position: absolute; top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,216,61,0.3), transparent);
+  animation: balanceShine 3s ease-in-out infinite;
+}
+@keyframes balanceShine { 0% { left: -100%; } 50%, 100% { left: 100%; } }
+.balance-top .coin-icon { width: 14px; height: 14px; background: radial-gradient(circle at 35% 35%, #ffd83d, #d4a017); border-radius: 50%; box-shadow: 0 0 6px rgba(255,216,61,0.8); flex-shrink: 0; }
+.balance-top .bp-label { font-size: 0.85rem; color: rgba(255,216,61,0.9); font-weight: 900; }
+.profile-icon {
+  width: 38px; height: 38px; background: linear-gradient(135deg, #23232a, #1a1a20);
+  border: 1px solid rgba(245,197,24,0.3); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #f5c518; font-weight: 900; font-size: 0.95rem; cursor: pointer;
+}
+.logo { text-align: center; padding: 18px 0 4px; display: flex; align-items: center; justify-content: center; gap: 12px; user-select: none; }
+.logo svg { width: 30px; height: 30px; }
+.logo span { font-size: 1.4rem; font-weight: 900; letter-spacing: 3px; color: #fff; }
+.settings-row { display: flex; gap: 20px; padding: 6px 22px 0; margin-bottom: 8px; }
+.settings-row svg { width: 22px; height: 22px; color: #6a6a72; cursor: pointer; transition: 0.2s; }
+.settings-row svg.active { color: #f5c518; filter: drop-shadow(0 0 8px rgba(245,197,24,0.8)); }
+
+/* ТОСТЫ */
+.toast-container {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  z-index: 2000; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none; max-width: 90vw; align-items: center;
+}
+.toast {
+  background: linear-gradient(180deg, #1a1a20, #0f0f13);
+  border: 1px solid rgba(245,197,24,0.4); border-radius: 12px; padding: 12px 18px;
+  color: #fff; font-size: 0.85rem; font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  animation: toastIn 0.3s ease-out;
+  white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+}
+.toast.success { border-color: #4ade80; color: #4ade80; }
+.toast.error { border-color: #ff2222; color: #ff6b6b; }
+.toast.info { border-color: #f5c518; color: #f5c518; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+.toast.hide { animation: toastOut 0.3s ease-in forwards; }
+
+/* ЭКРАНЫ */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* НИЖНЕЕ МЕНЮ */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  max-width: 520px; width: 100%;
+  background: rgba(13,13,16,0.96);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 8px 0 10px;
+  z-index: 150;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 6px 0;
+  color: #6a6a75; font-size: 0.7rem; font-weight: 700;
+  cursor: pointer; transition: 0.2s;
+  border: none; background: transparent; font-family: inherit;
+}
+.nav-btn svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: 0.2s; }
+.nav-btn.active { color: #f5c518; }
+.nav-btn.active svg { filter: drop-shadow(0 0 8px rgba(245,197,24,0.7)); }
+.nav-btn span { letter-spacing: 0.3px; }
+/* КРУГ */
+.wheel-container { position: relative; width: 280px; height: 280px; margin: 6px auto 0; display: flex; align-items: center; justify-content: center; overflow: visible; }
+.wheel-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from -90deg,
+    #17171c 0deg 20deg, #1e1e24 20deg 40deg, #17171c 40deg 60deg, #1e1e24 60deg 80deg,
+    #17171c 80deg 100deg, #1e1e24 100deg 120deg, #17171c 120deg 140deg, #1e1e24 140deg 160deg,
+    #17171c 160deg 180deg, #1e1e24 180deg 200deg, #17171c 200deg 220deg, #1e1e24 220deg 240deg,
+    #17171c 240deg 260deg, #1e1e24 260deg 280deg, #17171c 280deg 300deg, #1e1e24 300deg 320deg,
+    #17171c 320deg 340deg, #1e1e24 340deg 360deg);
+  mask: radial-gradient(circle, transparent 62%, #000 63%);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%);
+}
+.wheel-ticks {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(
+    #3a3a3a 0deg 2deg, transparent 2deg 15deg, #3a3a3a 15deg 17deg, transparent 17deg 30deg,
+    #3a3a3a 30deg 32deg, transparent 32deg 45deg, #3a3a3a 45deg 47deg, transparent 47deg 60deg,
+    #3a3a3a 60deg 62deg, transparent 62deg 75deg, #3a3a3a 75deg 77deg, transparent 77deg 90deg,
+    #3a3a3a 90deg 92deg, transparent 92deg 105deg, #3a3a3a 105deg 107deg, transparent 107deg 120deg,
+    #3a3a3a 120deg 122deg, transparent 122deg 135deg, #3a3a3a 135deg 137deg, transparent 137deg 150deg,
+    #3a3a3a 150deg 152deg, transparent 152deg 165deg, #3a3a3a 165deg 167deg, transparent 167deg 180deg,
+    #3a3a3a 180deg 182deg, transparent 182deg 195deg, #3a3a3a 195deg 197deg, transparent 197deg 210deg,
+    #3a3a3a 210deg 212deg, transparent 212deg 225deg, #3a3a3a 225deg 227deg, transparent 227deg 240deg,
+    #3a3a3a 240deg 242deg, transparent 242deg 255deg, #3a3a3a 255deg 257deg, transparent 257deg 270deg,
+    #3a3a3a 270deg 272deg, transparent 272deg 285deg, #3a3a3a 285deg 287deg, transparent 287deg 300deg,
+    #3a3a3a 300deg 302deg, transparent 302deg 315deg, #3a3a3a 315deg 317deg, transparent 317deg 330deg,
+    #3a3a3a 330deg 332deg, transparent 330deg 345deg, #3a3a3a 345deg 347deg, transparent 347deg 360deg);
+  mask: radial-gradient(circle, transparent 66%, #000 67%, #000 71%, transparent 72%);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 67%, #000 71%, transparent 72%);
+}
+.wheel-track { position: absolute; inset: 14px; border-radius: 50%; border: 3px solid #1a1a1f; }
+.wheel-arc { position: absolute; inset: 18px; pointer-events: none; z-index: 3; }
+.wheel-arc svg { width: 100%; height: 100%; }
+.wheel-arc .arc-bg-path { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 6; stroke-linecap: butt; }
+.wheel-arc .arc-fill-path { fill: none; stroke: url(#arcGradient); stroke-width: 6; stroke-linecap: butt; }
+
+.wheel-center-percent {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 8; text-align: center;
+  pointer-events: none; transition: opacity 0.2s;
+}
+.wheel-center-percent .pct-value {
+  font-size: 2.2rem; font-weight: 900;
+  background: linear-gradient(180deg, #f5c518, #ff8c42);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text; line-height: 1;
+}
+.wheel-center-percent .pct-label { font-size: 0.6rem; color: #888; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+.wheel-center-result {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  z-index: 15; text-align: center;
+  font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
+  pointer-events: none; opacity: 0;
+  white-space: nowrap; transition: opacity 0.25s;
+}
+.wheel-center-result.show { opacity: 1; animation: centerResultPop 0.5s ease-out forwards; }
+@keyframes centerResultPop {
+  0% { transform: translate(-50%, -50%) scale(0.5); }
+  60% { transform: translate(-50%, -50%) scale(1.15); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+.wheel-center-result.win {
+  font-size: 1.6rem; color: #4ade80;
+  text-shadow: 0 0 12px rgba(74,222,128,1), 0 0 24px rgba(74,222,128,0.9), 0 0 40px rgba(74,222,128,0.6);
+  animation: centerResultPop 0.5s ease-out forwards, resultPulseGreen 1s ease-in-out infinite 0.5s;
+}
+.wheel-center-result.lose {
+  font-size: 1.4rem; color: #ff2222;
+  text-shadow: 0 0 12px rgba(255,34,34,1), 0 0 24px rgba(255,34,34,0.9), 0 0 40px rgba(255,34,34,0.6);
+  animation: centerResultPop 0.5s ease-out forwards, resultPulseRed 0.7s ease-in-out infinite 0.5s;
+}
+@keyframes resultPulseGreen { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.08); } }
+@keyframes resultPulseRed { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } }
+.wheel-percent-marks { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.percent-label { position: absolute; font-size: 0.72rem; font-weight: 800; color: #f5c518; letter-spacing: 0.5px; }
+.arrow {
+  position: absolute; top: 50%; left: 50%; width: 0; height: 0;
+  transform-origin: 0 0;
+  transform: translate(-50%, -50%) rotate(0deg);
+  z-index: 5;
+}
+.arrow-inner { position: absolute; left: -11px; top: -118px; width: 22px; height: 32px; display: flex; justify-content: center; }
+.arrow-inner::before {
+  content: ''; position: absolute; top: 0;
+  width: 0; height: 0;
+  border-left: 12px solid transparent; border-right: 12px solid transparent;
+  border-bottom: 26px solid #ffd83d;
+  filter: drop-shadow(0 0 8px rgba(255,216,61,1)) drop-shadow(0 0 16px rgba(255,216,61,0.6));
+}
+.arrow-inner::after {
+  content: ''; position: absolute; top: 24px;
+  width: 3px; height: 12px; background: #ffd83d;
+  border-radius: 2px; box-shadow: 0 0 8px rgba(255,216,61,1);
+}
+.arrow.lose .arrow-inner::before {
+  border-bottom-color: #ff2222;
+  filter: drop-shadow(0 0 8px rgba(255,34,34,1)) drop-shadow(0 0 16px rgba(255,34,34,0.6));
+}
+.arrow.lose .arrow-inner::after { background: #ff2222; box-shadow: 0 0 8px rgba(255,34,34,1); }
+.bet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px; margin-top: 12px; }
+.bet-card {
+  background: linear-gradient(180deg, #1a1a20, #121217);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px; padding: 14px 12px;
+  min-height: 200px; display: flex; flex-direction: column;
+  align-items: center; position: relative; overflow: hidden;
+  cursor: pointer; transition: box-shadow 0.3s, border-color 0.3s;
+}
+.bet-card.filled { border-color: rgba(245,197,24,0.4); }
+.bet-card::after {
+  content: ''; position: absolute; bottom: 15px; left: 50%;
+  transform: translateX(-50%);
+  width: 130px; height: 60px;
+  background: radial-gradient(ellipse, rgba(245,197,24,0.12), transparent 70%);
+  opacity: 0.7; pointer-events: none;
+}
+.bet-card .title { font-size: 0.7rem; font-weight: 800; text-align: center; line-height: 1.4; color: #fff; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; z-index: 2; position: relative; }
+.bet-card .subtitle { font-size: 0.6rem; color: #7a7a85; text-align: center; margin-bottom: 12px; z-index: 2; min-height: 14px; position: relative; }
+.bet-card .preview { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 2; position: relative; }
+.bet-card .placeholder-logo svg { width: 75px; height: 75px; opacity: 0.15; }
+.bet-card .preview .skin-img { width: 100%; height: 70px; object-fit: contain; }
+.bet-card .preview .skin-name { font-size: 0.7rem; color: #fff; font-weight: 700; text-align: center; margin-top: 6px; line-height: 1.2; }
+.bet-card .preview .skin-price { font-size: 0.75rem; color: #f5c518; font-weight: 800; margin-top: 4px; }
+
+.bet-card.win-flash {
+  animation: betWinJump 0.6s ease-out;
+  box-shadow: 0 0 30px rgba(74,222,128,0.9), inset 0 0 20px rgba(74,222,128,0.3);
+  border-color: #4ade80 !important;
+}
+@keyframes betWinJump {
+  0% { transform: translateY(0); } 30% { transform: translateY(-14px); }
+  60% { transform: translateY(-4px); } 100% { transform: translateY(0); }
+}
+.bet-card.lose-flash { animation: betLoseFade 1s ease-out forwards; }
+@keyframes betLoseFade {
+  0% { box-shadow: 0 0 30px rgba(255,34,34,0.9), inset 0 0 20px rgba(255,34,34,0.4); border-color: #ff2222; opacity: 1; }
+  100% { box-shadow: 0 0 10px rgba(255,34,34,0.2); border-color: rgba(255,255,255,0.05); opacity: 0.35; }
+}
+
+.bet-card.win-flash .preview { animation: skinFadeGreen 3s ease-in forwards; }
+@keyframes skinFadeGreen {
+  0% { opacity: 1; filter: drop-shadow(0 0 12px #4ade80); }
+  70% { opacity: 1; filter: drop-shadow(0 0 24px #4ade80); }
+  100% { opacity: 0; filter: drop-shadow(0 0 24px #4ade80); }
+}
+.bet-card.lose-flash .preview { animation: skinFadeRed 3s ease-in forwards; }
+@keyframes skinFadeRed {
+  0% { opacity: 1; filter: drop-shadow(0 0 12px #ff2222); }
+  70% { opacity: 1; filter: drop-shadow(0 0 24px #ff2222); }
+  100% { opacity: 0; filter: drop-shadow(0 0 24px #ff2222); }
+}
+
+.upgrade-btn-wrap { padding: 16px; }
+.upgrade-btn {
+  width: 100%; background: linear-gradient(180deg, #d4a92c, #b08a1a);
+  color: #0d0d10; border: none; padding: 18px;
+  font-size: 1.05rem; font-weight: 900; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; letter-spacing: 0.5px;
+  cursor: not-allowed; opacity: 0.5; transition: 0.2s;
+}
+.upgrade-btn:not(:disabled) { cursor: pointer; opacity: 1; }
+.upgrade-btn svg { width: 20px; height: 20px; }
+
+.bottom-section {
+  margin-top: 10px;
+  background: linear-gradient(180deg, #131318, #0d0d10);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  border-radius: 24px 24px 0 0;
+  padding: 18px 16px; min-height: 480px;
+}
+.main-tabs { display: flex; gap: 0; background: rgba(255,255,255,0.03); border-radius: 14px; padding: 5px; margin-bottom: 14px; }
+.main-tab { flex: 1; padding: 12px; text-align: center; font-size: 0.88rem; font-weight: 700; color: #6a6a75; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+.main-tab.active { background: linear-gradient(180deg, #23232a, #1a1a20); color: #fff; }
+.sub-tabs { display: flex; gap: 0; margin-bottom: 14px; background: rgba(255,255,255,0.03); border-radius: 22px; padding: 5px; }
+.sub-tab { flex: 1; padding: 11px 22px; background: transparent; border: none; border-radius: 18px; font-size: 0.85rem; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.sub-tab.active { background: linear-gradient(180deg, #f5c518, #d4a017); color: #0d0d10; }
+.price-search { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+.price-search-input { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; color: #fff; font-size: 0.82rem; font-weight: 600; outline: none; min-width: 0; }
+.price-search-input::placeholder { color: #555; font-weight: 400; }
+.price-search-btn { flex-shrink: 0; width: 40px; height: 40px; background: linear-gradient(180deg, #f5c518, #d4a017); border: none; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #0d0d10; }
+.price-search-btn svg { width: 18px; height: 18px; fill: #0d0d10; }
+.price-search-reset { flex-shrink: 0; width: 40px; height: 40px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #888; }
+.price-search-reset svg { width: 16px; height: 16px; fill: currentColor; }
+.category-filters { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+.category-filters::-webkit-scrollbar { display: none; }
+.cat-btn { flex-shrink: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 14px; font-size: 0.75rem; font-weight: 700; color: #888; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+.cat-btn.active { background: linear-gradient(180deg, #f5c518, #d4a017); color: #0d0d10; border-color: transparent; }
+.banner-new { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #1a1a20 0%, #23232a 100%); border: 1px solid rgba(245,197,24,0.2); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.banner-new .text { font-size: 1rem; font-weight: 900; color: #fff; letter-spacing: 0.5px; flex: 1; }
+.banner-new .text span { color: #f5c518; }
+.cart-btn { flex-shrink: 0; background: linear-gradient(180deg, #f5c518, #d4a017); border: none; border-radius: 12px; padding: 12px 16px; font-size: 0.9rem; font-weight: 900; color: #0d0d10; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 14px rgba(245,197,24,0.3); }
+.cart-btn:active { transform: scale(0.97); }
+.cart-btn .cart-icon { font-size: 1.1rem; }
+.cart-btn .cart-badge { background: #0d0d10; color: #f5c518; border-radius: 10px; padding: 2px 8px; font-size: 0.75rem; font-weight: 900; min-width: 22px; text-align: center; }
+.qty-controls { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 6px; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 3px; border: 1px solid rgba(245,197,24,0.2); }
+.qty-btn { width: 26px; height: 26px; flex-shrink: 0; background: linear-gradient(180deg, #f5c518, #d4a017); border: none; border-radius: 6px; color: #0d0d10; font-weight: 900; font-size: 16px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+.qty-btn:active { transform: scale(0.9); }
+.qty-btn.minus { background: rgba(255,255,255,0.08); color: #f5c518; }
+.qty-display { flex: 1; text-align: center; font-size: 0.85rem; font-weight: 900; color: #fff; }
+
+.cart-modal-content { background: linear-gradient(180deg, #1a1a20, #0f0f13); border: 1px solid rgba(245,197,24,0.3); border-radius: 18px; padding: 22px 20px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.9); }
+.cart-modal-content h4 { font-size: 1.1rem; font-weight: 900; color: #fff; margin-bottom: 14px; text-align: center; letter-spacing: 0.5px; }
+.cart-list { max-height: 300px; overflow-y: auto; margin-bottom: 14px; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 0; }
+.cart-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.cart-row:last-child { border-bottom: none; }
+.cart-row .cart-img { width: 44px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.cart-row .cart-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.cart-row .cart-info { flex: 1; min-width: 0; }
+.cart-row .cart-name { font-size: 0.78rem; color: #fff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cart-row .cart-price { font-size: 0.72rem; color: #f5c518; font-weight: 800; margin-top: 2px; }
+.cart-row .cart-qty { font-size: 0.85rem; color: #fff; font-weight: 900; background: rgba(245,197,24,0.15); border-radius: 6px; padding: 4px 10px; flex-shrink: 0; }
+.cart-empty { text-align: center; color: #666; padding: 24px 12px; font-size: 0.85rem; }
+.cart-total { display: flex; justify-content: space-between; font-size: 0.95rem; font-weight: 900; padding: 10px 0; margin-bottom: 12px; color: #fff; }
+.cart-total .total-value { color: #f5c518; font-size: 1.1rem; }
+.cart-buttons { display: flex; gap: 8px; }
+.cart-buttons .input-btn { padding: 14px; font-size: 0.85rem; }
+.input-btn.cancel-all { background: rgba(255,60,60,0.12); border: 1px solid rgba(255,60,60,0.4); color: #ff6b6b; }
+.skins-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.skin-card-3 { background: linear-gradient(180deg, #1a1a20, #121217); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 5px; position: relative; overflow: hidden; display: flex; flex-direction: column; aspect-ratio: 0.70; min-width: 0; cursor: pointer; transition: 0.2s; }
+.skin-card-3.covert { border-color: rgba(235,75,75,0.5); }
+.skin-card-3.classified { border-color: rgba(211,44,230,0.5); }
+.skin-card-3.restricted { border-color: rgba(136,71,255,0.5); }
+.skin-card-3.contraband { border-color: rgba(228,174,57,0.6); }
+.skin-card-3.milspec { border-color: rgba(75,105,255,0.4); }
+.skin-card-3.selected { border-color: #f5c518; box-shadow: 0 0 14px rgba(245,197,24,0.5); }
+.skin-card-3 .price-top { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 4px; flex-shrink: 0; gap: 1px; min-width: 0; width: 100%; }
+.skin-card-3 .price-value { font-size: 0.72rem; font-weight: 900; color: #f5c518; letter-spacing: -0.3px; display: flex; align-items: center; gap: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; min-width: 0; }
+.skin-card-3 .price-value .coin { width: 10px; height: 10px; background: radial-gradient(circle at 35% 35%, #f5c518, #d4a017); border-radius: 50%; flex-shrink: 0; }
+.skin-card-3 .fn-label { font-size: 0.55rem; font-weight: 800; color: #7a7a85; letter-spacing: 0.5px; align-self: flex-start; }
+.skin-card-3 .stattrak-label { font-size: 0.55rem; font-weight: 900; color: #ffd83d; letter-spacing: 0.2px; align-self: flex-start; text-shadow: 0 0 6px rgba(255,216,61,1), 0 0 12px rgba(255,216,61,0.8), 0 0 20px rgba(255,216,61,0.5); animation: stattrakPulse 1.8s ease-in-out infinite; }
+@keyframes stattrakPulse { 0%, 100% { text-shadow: 0 0 6px rgba(255,216,61,1), 0 0 12px rgba(255,216,61,0.8), 0 0 20px rgba(255,216,61,0.5); } 50% { text-shadow: 0 0 10px rgba(255,216,61,1), 0 0 20px rgba(255,216,61,0.9), 0 0 30px rgba(255,216,61,0.7); } }
+.skin-card-3 .img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; padding: 4px 0; overflow: hidden; min-height: 0; }
+.skin-card-3 .img-wrap img { width: 100%; height: 100%; max-width: 100%; max-height: 100%; object-fit: contain; display: block; pointer-events: none; }
+.skin-card-3 .weapon-name { font-size: 0.55rem; color: #7a7a85; font-weight: 700; text-align: center; margin-bottom: 2px; flex-shrink: 0; }
+.skin-card-3 .skin-name { font-size: 0.68rem; color: #fff; font-weight: 900; text-align: center; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; letter-spacing: -0.2px; flex-shrink: 0; }
+.skin-card-3 .inv-actions { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+.inv-btn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: 0.2s; }
+.inv-btn.star.active { background: rgba(245,197,24,0.2); border-color: rgba(245,197,24,0.5); color: #f5c518; }
+.inv-btn.star.active svg { fill: #f5c518; }
+.inv-btn.sell { color: #ffc857; }
+.inv-btn svg { width: 14px; height: 14px; fill: currentColor; }
+.empty { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #555; font-size: 0.9rem; line-height: 1.6; }
+.empty b { color: #f5c518; display: block; margin-bottom: 6px; font-size: 0.95rem; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.balance-slider-block { margin-top: 8px; padding: 10px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; }
+.balance-slider-label { display: flex; justify-content: space-between; font-size: 0.7rem; color: #888; margin-bottom: 6px; font-weight: 600; }
+.balance-slider-label b { color: #f5c518; }
+.balance-slider { width: 100%; height: 4px; -webkit-appearance: none; appearance: none; background: rgba(255,255,255,0.08); border-radius: 2px; outline: none; }
+.balance-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(180deg, #f5c518, #d4a017); cursor: pointer; border: 2px solid #0d0d10; box-shadow: 0 0 8px rgba(245,197,24,0.6); }
+.balance-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: linear-gradient(180deg, #f5c518, #d4a017); cursor: pointer; border: 2px solid #0d0d10; box-shadow: 0 0 8px rgba(245,197,24,0.6); }
+
+.percent-buttons-block { margin-top: 8px; padding: 10px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; }
+.percent-buttons-label { font-size: 0.7rem; color: #888; font-weight: 600; margin-bottom: 6px; }
+.percent-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.percent-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 4px; font-size: 0.8rem; font-weight: 800; color: #ccc; cursor: pointer; transition: 0.2s; text-align: center; }
+.percent-btn.active { background: linear-gradient(180deg, #f5c518, #d4a017); color: #0d0d10; border-color: transparent; box-shadow: 0 0 12px rgba(245,197,24,0.4); }
+.percent-btn:hover:not(.active) { background: rgba(245,197,24,0.1); border-color: rgba(245,197,24,0.3); color: #f5c518; }
+/* ПРОФИЛЬ */
+.profile-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 500; display: none; align-items: flex-end; justify-content: center; }
+.profile-modal.show { display: flex; }
+.profile-box { background: linear-gradient(180deg, #1a1a20, #0f0f13); border: 1px solid rgba(255,255,255,0.08); border-bottom: none; border-radius: 24px 24px 0 0; width: 100%; max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; animation: slideUpProfile 0.3s ease-out; overflow: hidden; }
+@keyframes slideUpProfile { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.profile-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.profile-header h3 { font-size: 1rem; font-weight: 800; color: #fff; }
+.profile-close { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #ddd; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.3rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.profile-body { padding: 20px; overflow-y: auto; flex: 1; }
+.profile-user { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.profile-avatar-big { width: 64px; height: 64px; background: linear-gradient(135deg, #23232a, #1a1a20); border: 2px solid rgba(245,197,24,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #f5c518; font-weight: 900; font-size: 1.6rem; flex-shrink: 0; }
+.profile-user-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.profile-name-row { display: flex; align-items: center; gap: 8px; }
+.profile-name { font-size: 1.2rem; font-weight: 900; color: #fff; letter-spacing: -0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-edit-btn { background: rgba(245,197,24,0.15); border: 1px solid rgba(245,197,24,0.35); color: #f5c518; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.profile-edit-btn svg { width: 14px; height: 14px; }
+.profile-id { font-size: 0.78rem; color: #7a7a85; font-weight: 600; font-family: 'Courier New', monospace; }
+.best-drop-block { margin-bottom: 20px; background: linear-gradient(135deg, #1a1a20 0%, #23232a 100%); border: 1px solid rgba(245,197,24,0.25); border-radius: 16px; padding: 16px; }
+.best-drop-title { font-size: 0.75rem; color: #f5c518; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; text-align: center; }
+.best-drop-content { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.best-drop-img { width: 160px; height: 100px; display: flex; align-items: center; justify-content: center; }
+.best-drop-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.best-drop-img.empty { background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1); border-radius: 10px; color: #555; font-size: 0.75rem; font-weight: 600; text-align: center; padding: 10px; }
+.best-drop-name { font-size: 0.95rem; color: #fff; font-weight: 900; text-align: center; }
+.best-drop-meta { font-size: 0.78rem; color: #f5c518; font-weight: 700; text-align: center; }
+.best-drop-meta span { color: #7a7a85; font-weight: 600; }
+.profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.profile-stat-tile { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 12px 14px; }
+.profile-stat-label { font-size: 0.68rem; color: #7a7a85; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.profile-stat-value { font-size: 1.1rem; color: #fff; font-weight: 900; margin-top: 4px; }
+.profile-stat-value.gold { color: #f5c518; }
+.profile-inv-title { font-size: 0.8rem; color: #888; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+.profile-inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.profile-inv-item { background: linear-gradient(180deg, #1a1a20, #121217); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.profile-inv-item.covert { border-color: rgba(235,75,75,0.5); }
+.profile-inv-item.classified { border-color: rgba(211,44,230,0.5); }
+.profile-inv-item.restricted { border-color: rgba(136,71,255,0.5); }
+.profile-inv-item.contraband { border-color: rgba(228,174,57,0.6); }
+.profile-inv-item.milspec { border-color: rgba(75,105,255,0.4); }
+.profile-inv-item .inv-img { width: 100%; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.profile-inv-item .inv-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.profile-inv-item .inv-name { font-size: 0.65rem; color: #fff; font-weight: 700; text-align: center; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 28px; }
+.profile-inv-item .inv-actions { display: flex; gap: 6px; justify-content: center; }
+.profile-sell-all { width: 100%; background: linear-gradient(180deg, #d4a92c, #b08a1a); color: #0d0d10; border: none; padding: 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.profile-sell-all svg { width: 18px; height: 18px; fill: #0d0d10; }
+
+.input-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 600; display: none; align-items: center; justify-content: center; padding: 20px; }
+.input-modal.show { display: flex; }
+.input-box { background: linear-gradient(180deg, #1a1a20, #0f0f13); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 24px 22px; width: 100%; max-width: 380px; text-align: center; }
+.input-box h4 { font-size: 1.05rem; font-weight: 900; color: #fff; margin-bottom: 8px; }
+.input-box p { font-size: 0.82rem; color: #888; margin-bottom: 16px; line-height: 1.4; }
+.input-field { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 13px 14px; color: #fff; font-size: 0.95rem; font-weight: 700; text-align: center; outline: none; margin-bottom: 10px; }
+.input-row { display: flex; gap: 8px; }
+.input-btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 0.85rem; font-weight: 900; cursor: pointer; border: none; }
+.input-btn.cancel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #ddd; }
+.input-btn.confirm { background: linear-gradient(180deg, #f5c518, #d4a017); color: #0d0d10; }
+/* ================= КОНТРАКТ ================= */
+.contract-screen { padding: 16px; }
+.contract-header { text-align: center; padding: 10px 0 20px; }
+.contract-header h2 { font-size: 1.4rem; font-weight: 900; color: #fff; letter-spacing: 1px; margin-bottom: 6px; }
+.contract-header p { font-size: 0.8rem; color: #7a7a85; font-weight: 600; }
+
+.contract-slots {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  margin-bottom: 16px; padding: 12px;
+  background: linear-gradient(180deg, #1a1a20, #121217);
+  border: 1px solid rgba(245,197,24,0.2);
+  border-radius: 14px;
+}
+.contract-slot {
+  aspect-ratio: 0.75;
+  background: rgba(255,255,255,0.03);
+  border: 1.5px dashed rgba(255,255,255,0.15);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; cursor: pointer; transition: 0.2s; overflow: hidden;
+}
+.contract-slot.filled { border-style: solid; border-color: rgba(245,197,24,0.5); background: linear-gradient(180deg, #1a1a20, #121217); cursor: default; }
+.contract-slot.filled.locked { cursor: not-allowed; opacity: 0.7; }
+.contract-slot .slot-plus { font-size: 2rem; color: #444; font-weight: 300; }
+.contract-slot .slot-img { width: 100%; height: 60%; object-fit: contain; }
+.contract-slot .slot-price { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); font-size: 0.55rem; color: #f5c518; font-weight: 900; white-space: nowrap; }
+.contract-slot .slot-remove { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border-radius: 50%; background: rgba(255,50,50,0.8); color: #fff; border: none; font-size: 12px; font-weight: 900; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; z-index: 2; }
+
+.contract-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.contract-info-tile { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px 14px; }
+.contract-info-label { font-size: 0.65rem; color: #7a7a85; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+.contract-info-value { font-size: 1.1rem; color: #fff; font-weight: 900; }
+.contract-info-value.gold { color: #f5c518; }
+
+.contract-btn {
+  width: 100%; background: linear-gradient(180deg, #d4a92c, #b08a1a);
+  color: #0d0d10; border: none; padding: 18px;
+  font-size: 1.05rem; font-weight: 900; border-radius: 14px;
+  cursor: not-allowed; opacity: 0.5; transition: 0.2s; letter-spacing: 0.5px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px;
+}
+.contract-btn:not(:disabled) { cursor: pointer; opacity: 1; }
+.contract-btn:not(:disabled):active { transform: scale(0.98); }
+
+.contract-pick-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 55vh; overflow-y: auto; padding: 4px 0; margin: 12px 0; }
+.contract-pick-item { background: linear-gradient(180deg, #1a1a20, #121217); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 6px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; min-height: 110px; }
+.contract-pick-item:active { transform: scale(0.96); }
+.contract-pick-item img { width: 100%; height: 50px; object-fit: contain; margin-bottom: 4px; }
+.contract-pick-item .pick-name { font-size: 0.6rem; color: #fff; font-weight: 700; text-align: center; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 3px; min-height: 22px; }
+.contract-pick-item .pick-price { font-size: 0.7rem; color: #f5c518; font-weight: 900; }
+
+.contract-result { text-align: center; padding: 20px 10px; }
+.contract-result .result-mult { font-size: 3rem; font-weight: 900; letter-spacing: 2px; line-height: 1; margin-bottom: 8px; }
+.contract-result .result-mult.win { color: #4ade80; text-shadow: 0 0 20px rgba(74,222,128,1), 0 0 40px rgba(74,222,128,0.6); }
+.contract-result .result-mult.lose { color: #ff2222; text-shadow: 0 0 20px rgba(255,34,34,1), 0 0 40px rgba(255,34,34,0.6); }
+.contract-result .result-label { font-size: 0.85rem; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+.contract-result .result-prize { background: rgba(255,255,255,0.03); border: 1px solid rgba(245,197,24,0.3); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.contract-result .result-prize img { width: 140px; height: 90px; object-fit: contain; display: block; margin: 0 auto 10px; }
+.contract-result .result-prize .prize-name { font-size: 0.95rem; color: #fff; font-weight: 900; }
+.contract-result .result-prize .prize-value { font-size: 1rem; color: #f5c518; font-weight: 900; margin-top: 6px; }
+/* ================= БОНУСЫ ================= */
+.bonus-screen { padding: 16px; }
+
+/* === КЕЙС === */
+.case-block { background: linear-gradient(180deg, #1a1a20, #121217); border: 1px solid rgba(245,197,24,0.25); border-radius: 18px; padding: 20px 16px; margin-bottom: 14px; text-align: center; position: relative; overflow: hidden; }
+.case-block::before { content: ''; position: absolute; top: -50%; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: radial-gradient(circle, rgba(245,197,24,0.15), transparent 70%); pointer-events: none; }
+.case-title { font-size: 1rem; font-weight: 900; color: #f5c518; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; position: relative; }
+.case-subtitle { font-size: 0.72rem; color: #7a7a85; font-weight: 600; margin-bottom: 16px; position: relative; }
+.case-box { width: 150px; height: 150px; margin: 0 auto 16px; position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.case-box svg { width: 120px; height: 120px; filter: drop-shadow(0 0 20px rgba(245,197,24,0.5)); transition: transform 0.2s; }
+.case-box:active svg { transform: scale(0.95); }
+.case-box.opening svg { animation: caseShake 0.4s ease-in-out infinite; }
+@keyframes caseShake { 0%, 100% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(-6deg) scale(1.03); } 75% { transform: rotate(6deg) scale(1.03); } }
+.case-box.cooldown { cursor: not-allowed; opacity: 0.5; }
+.case-box.cooldown svg { filter: grayscale(1) drop-shadow(0 0 8px rgba(245,197,24,0.2)); }
+.case-btn { width: 100%; background: linear-gradient(180deg, #f5c518, #d4a017); color: #0d0d10; border: none; padding: 16px; font-size: 0.95rem; font-weight: 900; border-radius: 12px; cursor: pointer; transition: 0.2s; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px; position: relative; }
+.case-btn:disabled { background: linear-gradient(180deg, #2a2a30, #1e1e24); color: #666; cursor: not-allowed; }
+.case-btn:not(:disabled):active { transform: scale(0.98); }
+
+/* === ЛЕНТА КЕЙСА (как в CS2) === */
+.case-strip-wrap {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.case-strip-wrap.show { display: flex; }
+.case-strip-modal {
+  background: linear-gradient(180deg, #1a1a20, #0f0f13);
+  border: 1px solid rgba(245,197,24,0.4);
+  border-radius: 20px;
+  padding: 24px 20px;
+  width: 100%; max-width: 520px;
+  text-align: center;
+  animation: caseModalPop 0.4s ease-out;
+}
+@keyframes caseModalPop { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.case-strip-title { font-size: 0.85rem; color: #f5c518; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; }
+.case-strip-viewport {
+  position: relative;
+  height: 140px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.case-strip-viewport::before {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 3px; background: #f5c518;
+  transform: translateX(-50%);
+  z-index: 5;
+  box-shadow: 0 0 12px rgba(245,197,24,1), 0 0 24px rgba(245,197,24,0.6);
+}
+.case-strip {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  will-change: transform;
+}
+.case-strip-item {
+  flex-shrink: 0;
+  width: 110px; height: 110px;
+  margin: 0 4px;
+  background: linear-gradient(180deg, #1a1a20, #121217);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4px;
+  position: relative;
+}
+.case-strip-item img { width: 90px; height: 60px; object-fit: contain; }
+.case-strip-item .strip-name {
+  font-size: 0.5rem; color: #aaa; font-weight: 700;
+  text-align: center; margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  width: 100%;
+}
+.case-strip-item.covert { border-color: rgba(235,75,75,0.5); }
+.case-strip-item.classified { border-color: rgba(211,44,230,0.5); }
+.case-strip-item.restricted { border-color: rgba(136,71,255,0.5); }
+.case-strip-item.contraband { border-color: rgba(228,174,57,0.6); }
+
+/* Модалка показа выигрыша */
+.case-reveal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 1100; display: none; align-items: center; justify-content: center; padding: 20px; }
+.case-reveal.show { display: flex; }
+.case-reveal-box { background: linear-gradient(180deg, #1a1a20, #0f0f13); border: 1px solid rgba(245,197,24,0.4); border-radius: 20px; padding: 30px 24px; width: 100%; max-width: 360px; text-align: center; animation: caseRevealPop 0.5s ease-out; }
+@keyframes caseRevealPop { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.case-reveal-title { font-size: 0.85rem; color: #f5c518; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; }
+.case-reveal-img { width: 200px; height: 130px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.case-reveal-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.case-reveal-name { font-size: 1rem; color: #fff; font-weight: 900; margin-bottom: 8px; }
+.case-reveal-price { font-size: 1.2rem; color: #f5c518; font-weight: 900; margin-bottom: 20px; }
+.case-reveal .input-btn.confirm { width: 100%; padding: 14px; font-size: 0.95rem; }
+
+
+/* === КЛИКЕР === */
+.clicker-block { background: linear-gradient(180deg, #1a1a20, #121217); border: 1px solid rgba(245,197,24,0.25); border-radius: 18px; padding: 20px 16px; margin-bottom: 14px; text-align: center; position: relative; }
+.clicker-title { font-size: 1rem; font-weight: 900; color: #f5c518; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+.clicker-subtitle { font-size: 0.72rem; color: #7a7a85; font-weight: 600; margin-bottom: 16px; }
+.clicker-btn {
+  width: 160px; height: 160px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f5c518, #b08a1a);
+  border: 4px solid rgba(255,255,255,0.1);
+  color: #0d0d10; font-size: 1.5rem; font-weight: 900;
+  cursor: pointer; margin: 0 auto 16px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  box-shadow: 0 10px 30px rgba(245,197,24,0.4), inset 0 -6px 0 rgba(0,0,0,0.2);
+  transition: 0.08s; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.clicker-btn:active { transform: scale(0.94); box-shadow: 0 4px 12px rgba(245,197,24,0.6), inset 0 -3px 0 rgba(0,0,0,0.3); }
+.clicker-btn .clicker-emoji { font-size: 2rem; line-height: 1; }
+.clicker-btn .clicker-plus { font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; }
+.clicker-counter { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; color: #7a7a85; font-weight: 700; }
+.clicker-counter b { color: #f5c518; font-size: 1rem; }
+
+/* ================= МОДАЛКА ПРОМОКОДА ================= */
+.promo-success-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.promo-success-modal.show { display: flex; }
+.promo-success-box {
+  background: linear-gradient(180deg, #1a1a20, #0f0f13);
+  border: 1.5px solid rgba(245,197,24,0.5);
+  border-radius: 24px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  animation: promoPop 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  box-shadow: 0 0 60px rgba(245,197,24,0.4), 0 20px 60px rgba(0,0,0,0.9);
+  position: relative;
+  overflow: hidden;
+}
+.promo-success-box::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(245,197,24,0.25), transparent 70%);
+  pointer-events: none;
+  animation: promoGlow 2s ease-in-out infinite;
+}
+@keyframes promoGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@keyframes promoPop {
+  0% { transform: scale(0.5) translateY(30px); opacity: 0; }
+  60% { transform: scale(1.05) translateY(0); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.promo-success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  background: radial-gradient(circle at 35% 35%, #4ade80, #16a34a);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 900;
+  color: #fff;
+  box-shadow: 0 0 30px rgba(74,222,128,0.8), 0 0 60px rgba(74,222,128,0.4);
+  animation: checkPulse 0.8s ease-out, checkBounce 1.5s ease-in-out infinite 0.8s;
+  position: relative;
+  z-index: 2;
+}
+@keyframes checkPulse {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+@keyframes checkBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+.promo-success-title {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #4ade80;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 2;
+}
+.promo-success-amount {
+  font-size: 2.6rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 8px;
+  background: linear-gradient(180deg, #ffe066, #f5c518, #d4a017);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(245,197,24,0.5);
+  animation: amountShine 2s ease-in-out infinite;
+  position: relative;
+  z-index: 2;
+}
+@keyframes amountShine {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(245,197,24,0.6)); }
+  50% { filter: drop-shadow(0 0 25px rgba(245,197,24,1)); }
+}
+.promo-success-code {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #7a7a85;
+  letter-spacing: 1.5px;
+  margin-bottom: 22px;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+  font-family: 'Courier New', monospace;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: inline-block;
+}
+.promo-success-box .input-btn.confirm {
+  position: relative;
+  z-index: 2;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="online-badge">
+      <span class="bp-icon"></span>
+      <span id="onlineCount">2 000</span>
+    </div>
+    <div class="topbar-right">
+      <div class="balance-top">
+        <span class="coin-icon"></span>
+        <span id="balanceTop">10 000</span>
+        <span class="bp-label">₽</span>
+      </div>
+      <div class="profile-icon" id="profileBtn">P</div>
+    </div>
+  </div>
+
+  <div class="logo">
+    <svg viewBox="0 0 40 40">
+      <path d="M20 5 L32 17 L26 23 L20 17 L14 23 L8 17 Z" fill="#f5c518"/>
+      <path d="M20 15 L32 27 L26 33 L20 27 L14 33 L8 27 Z" fill="#d4a017"/>
+    </svg>
+    <span>UPGRADER</span>
+  </div>
+
+  <div class="settings-row">
+  <svg viewBox="0 0 24 24" fill="currentColor" id="fastBtn"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+</div>
+
+  <div class="screen active" id="screen-upgrade">
+    <div class="wheel-container">
+      <div class="wheel-ring"></div>
+      <div class="wheel-ticks"></div>
+      <div class="wheel-track"></div>
+      <div class="wheel-arc">
+        <svg viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="arcGradient" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#ff8c42"/>
+              <stop offset="50%" stop-color="#f5c518"/>
+              <stop offset="100%" stop-color="#ffe066"/>
+            </linearGradient>
+          </defs>
+          <path class="arc-bg-path" d="M 50 96 A 46 46 0 0 0 50 4 M 50 96 A 46 46 0 0 1 50 4" />
+          <path class="arc-fill-path" d="" />
+          <path class="arc-fill-path" d="" />
+        </svg>
+      </div>
+      <div class="wheel-percent-marks">
+        <div class="percent-label" style="left: 50%; top: 100%; transform: translate(-50%, 8px);">0%</div>
+        <div class="percent-label" style="left: 100%; top: 50%; transform: translate(8px, -50%);">50%</div>
+        <div class="percent-label" style="left: 0%; top: 50%; transform: translate(-100% - 8px, -50%);">50%</div>
+        <div class="percent-label" style="left: 50%; top: 0%; transform: translate(-50%, -100% - 8px);">100%</div>
+      </div>
+      <div class="wheel-center-percent" id="wheelCenterPercent">
+        <div class="pct-value" id="pctValue">0%</div>
+        <div class="pct-label">шанс</div>
+      </div>
+      <div class="wheel-center-result" id="wheelCenterResult"></div>
+      <div class="arrow" id="arrow"><div class="arrow-inner"></div></div>
+    </div>
+
+    <div class="bet-row">
+      <div class="bet-card" id="betCardLeft">
+        <div class="title">Ваш скин</div>
+        <div class="subtitle">Тапните для выбора</div>
+        <div class="preview" id="betPreviewLeft">
+          <div class="placeholder-logo">
+            <svg viewBox="0 0 40 40">
+              <path d="M20 6 L32 18 L26 24 L20 18 L14 24 L8 18 Z" fill="#f5c518"/>
+              <path d="M20 16 L32 28 L26 34 L20 28 L14 34 L8 28 Z" fill="#d4a017"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="bet-card" id="betCardRight">
+        <div class="title">Хочу получить</div>
+        <div class="subtitle">Тапните для сброса</div>
+        <div class="preview" id="betPreviewRight">
+          <div class="placeholder-logo">
+            <svg viewBox="0 0 40 40">
+              <path d="M20 6 L32 18 L26 24 L20 18 L14 24 L8 18 Z" fill="#f5c518"/>
+              <path d="M20 16 L32 28 L26 34 L20 28 L14 34 L8 28 Z" fill="#d4a017"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px;margin-top:12px;">
+      <div class="balance-slider-block">
+        <div class="balance-slider-label">
+          <span>Баланс:</span>
+          <b id="balanceSliderValue">0 ₽</b>
+        </div>
+        <input type="range" class="balance-slider" id="balanceSlider" min="0" max="10000" value="0" step="100">
+      </div>
+      <div class="percent-buttons-block">
+        <div class="percent-buttons-label">Шанс:</div>
+        <div class="percent-buttons">
+          <div class="percent-btn" data-mult="2">×2</div>
+          <div class="percent-btn" data-mult="4">×4</div>
+          <div class="percent-btn" data-mult="8">×8</div>
+          <div class="percent-btn" data-percent="35">35%</div>
+          <div class="percent-btn" data-percent="55">55%</div>
+          <div class="percent-btn" data-percent="75">75%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="upgrade-btn-wrap">
+      <button class="upgrade-btn" id="upgradeBtn" disabled>
+        <svg viewBox="0 0 40 40">
+          <path d="M20 5 L32 17 L26 23 L20 17 L14 23 L8 17 Z" fill="#0d0d10"/>
+          <path d="M20 15 L32 27 L26 33 L20 27 L14 33 L8 27 Z" fill="#0d0d10" opacity="0.7"/>
+        </svg>
+        <span id="upgradeBtnText">Прокачать</span>
+      </button>
+    </div>
+      <div class="bottom-section">
+    <div class="main-tabs">
+      <div class="main-tab active" data-tab="mine">Мои предметы</div>
+      <div class="main-tab" data-tab="wish">Желаемые предметы</div>
+    </div>
+
+    <div class="tab-content active" id="tab-mine">
+      <div class="sub-tabs">
+        <div class="sub-tab active" data-sub="inventory">🗡 Мои скины</div>
+        <div class="sub-tab" data-sub="shop">🏪 Магазин</div>
+      </div>
+
+      <div id="subtab-inventory">
+        <div class="price-search">
+          <input type="number" class="price-search-input" id="invSearchFrom" placeholder="от" min="0">
+          <input type="number" class="price-search-input" id="invSearchTo" placeholder="до" min="0">
+          <button class="price-search-btn" id="invSearchBtn">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </button>
+          <button class="price-search-reset" id="invSearchReset">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="category-filters" id="invFilters">
+          <button class="cat-btn active" data-filter="all">Всё</button>
+          <button class="cat-btn" data-filter="skin">Скины</button>
+          <button class="cat-btn" data-filter="knife">Ножи</button>
+          <button class="cat-btn" data-filter="gloves">Перчатки</button>
+          <button class="cat-btn" data-filter="stattrak">StatTrak™</button>
+          <button class="cat-btn" data-filter="sticker">Наклейки</button>
+        </div>
+        <div class="skins-grid-3" id="inventoryGrid"></div>
+      </div>
+
+      <div id="subtab-shop" style="display:none;">
+        <div class="price-search">
+          <input type="number" class="price-search-input" id="shopSearchFrom" placeholder="от" min="0">
+          <input type="number" class="price-search-input" id="shopSearchTo" placeholder="до" min="0">
+          <button class="price-search-btn" id="shopSearchBtn">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          </button>
+          <button class="price-search-reset" id="shopSearchReset">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div class="category-filters" id="shopFilters">
+          <button class="cat-btn active" data-filter="all">Всё</button>
+          <button class="cat-btn" data-filter="skin">Скины</button>
+          <button class="cat-btn" data-filter="knife">Ножи</button>
+          <button class="cat-btn" data-filter="gloves">Перчатки</button>
+          <button class="cat-btn" data-filter="stattrak">StatTrak™</button>
+          <button class="cat-btn" data-filter="sticker">Наклейки</button>
+        </div>
+        <div class="banner-new" style="margin-bottom:14px;">
+          <div class="text">НОВЫЕ <span>СКИНЫ</span></div>
+          <button class="cart-btn" id="openCartBtn">
+            <span class="cart-icon">🛒</span>
+            <span>Корзина</span>
+            <span class="cart-badge" id="cartBadge">0</span>
+          </button>
+        </div>
+        <div class="skins-grid-3" id="shopGrid"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-wish">
+      <div class="price-search">
+        <input type="number" class="price-search-input" id="wishSearchFrom" placeholder="от" min="0">
+        <input type="number" class="price-search-input" id="wishSearchTo" placeholder="до" min="0">
+        <button class="price-search-btn" id="wishSearchBtn">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </button>
+        <button class="price-search-reset" id="wishSearchReset">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+      <div class="category-filters" id="wishFilters">
+        <button class="cat-btn active" data-filter="all">Всё</button>
+        <button class="cat-btn" data-filter="skin">Скины</button>
+        <button class="cat-btn" data-filter="knife">Ножи</button>
+        <button class="cat-btn" data-filter="gloves">Перчатки</button>
+        <button class="cat-btn" data-filter="stattrak">StatTrak™</button>
+        <button class="cat-btn" data-filter="sticker">Наклейки</button>
+      </div>
+      <div style="font-size:0.85rem; color:#888; font-weight:700; margin-bottom:10px;">
+        👆 Нажмите ×2 / ×4 / ×8 или 35% / 55% / 75% чтобы выбрать цель
+      </div>
+      <div class="skins-grid-3" id="wishGrid"></div>
+    </div>
+  </div>
+</div>
+  <!-- ================= ЭКРАН: РЕЖИМЫ (КОНТРАКТ) ================= -->
+  <div class="screen" id="screen-modes">
+    <div class="contract-screen">
+      <div class="contract-header">
+        <h2>🎲 КОНТРАКТ</h2>
+        <p>Собери 5 скинов и заключи контракт</p>
+      </div>
+
+      <div class="contract-slots" id="contractSlots">
+        <div class="contract-slot" data-slot="0"><span class="slot-plus">+</span></div>
+        <div class="contract-slot" data-slot="1"><span class="slot-plus">+</span></div>
+        <div class="contract-slot" data-slot="2"><span class="slot-plus">+</span></div>
+        <div class="contract-slot" data-slot="3"><span class="slot-plus">+</span></div>
+        <div class="contract-slot" data-slot="4"><span class="slot-plus">+</span></div>
+      </div>
+
+      <div class="contract-info">
+        <div class="contract-info-tile">
+          <div class="contract-info-label">Общая сумма</div>
+          <div class="contract-info-value gold" id="contractTotal">0 ₽</div>
+        </div>
+        <div class="contract-info-tile">
+          <div class="contract-info-label">Скинов выбрано</div>
+          <div class="contract-info-value" id="contractCount">0 / 5</div>
+        </div>
+      </div>
+
+      <button class="contract-btn" id="contractBtn" disabled>
+        ⚡ ЗАКЛЮЧИТЬ КОНТРАКТ
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= ЭКРАН: БОНУСЫ ================= -->
+  <div class="screen" id="screen-bonus">
+    <div class="bonus-screen">
+      <div class="case-block">
+        <div class="case-title">🎁 ЕЖЕДНЕВНЫЙ КЕЙС</div>
+        <div class="case-subtitle">Раз в 24 часа — бесплатный скин от 10 000 до 50 000 ₽</div>
+        <div class="case-box" id="caseBox">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="caseGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f5c518"/>
+                <stop offset="100%" stop-color="#b08a1a"/>
+              </linearGradient>
+            </defs>
+            <rect x="15" y="40" width="70" height="45" rx="6" fill="url(#caseGrad)" stroke="#0d0d10" stroke-width="2"/>
+            <rect x="15" y="30" width="70" height="18" rx="4" fill="#d4a017" stroke="#0d0d10" stroke-width="2"/>
+            <rect x="45" y="30" width="10" height="55" fill="#0d0d10"/>
+            <circle cx="50" cy="52" r="7" fill="#0d0d10"/>
+            <circle cx="50" cy="52" r="3" fill="#f5c518"/>
+          </svg>
+        </div>
+        <button class="case-btn" id="caseBtn">
+          <span id="caseBtnText">🎁 Открыть кейс</span>
+        </button>
+      </div>
+
+      <div class="clicker-block">
+        <div class="clicker-title">💰 КЛИКЕР</div>
+        <div class="clicker-subtitle">1 клик = 0.5 ₽ (безлимит)</div>
+        <button class="clicker-btn" id="clickerBtn">
+          <span class="clicker-emoji">💵</span>
+          <span class="clicker-plus">+0.5 ₽</span>
+        </button>
+        <div class="clicker-counter">
+          Всего накликано: <b id="clickerTotal">0 ₽</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ЛЕНТА ОТКРЫТИЯ КЕЙСА ================= -->
+  <div class="case-strip-wrap" id="caseStripWrap">
+    <div class="case-strip-modal">
+      <div class="case-strip-title">🎁 ОТКРЫТИЕ КЕЙСА</div>
+      <div class="case-strip-viewport">
+        <div class="case-strip" id="caseStrip"></div>
+      </div>
+      <div style="font-size: 0.75rem; color: #7a7a85;">Ожидайте...</div>
+    </div>
+  </div>
+
+<!-- ================= МОДАЛКА ПРОМОКОДА ================= -->
+<div class="promo-success-modal" id="promoSuccessModal">
+  <div class="promo-success-box">
+    <div class="promo-success-icon">✓</div>
+    <div class="promo-success-title">ПРОМОКОД АКТИВИРОВАН</div>
+    <div class="promo-success-amount" id="promoSuccessAmount">+0 ₽</div>
+    <div class="promo-success-code" id="promoSuccessCode">CODE</div>
+    <button class="input-btn confirm" id="promoSuccessClose" style="width:100%;padding:14px;font-size:0.95rem;">Забрать</button>
+  </div>
+</div>
+  <!-- ================= МОДАЛКА ПОКАЗА ВЫИГРЫША ================= -->
+  <div class="case-reveal" id="caseReveal">
+    <div class="case-reveal-box">
+      <div class="case-reveal-title">🎁 ТЫ ВЫБИЛ</div>
+      <div class="case-reveal-img" id="caseRevealImg"></div>
+      <div class="case-reveal-name" id="caseRevealName">—</div>
+      <div class="case-reveal-price" id="caseRevealPrice">—</div>
+      <button class="input-btn confirm" id="caseRevealClose">Забрать</button>
+    </div>
+  </div>
+
+  <!-- ================= МОДАЛКА ПРОФИЛЯ ================= -->
+  <div class="profile-modal" id="profileModal">
+    <div class="profile-box">
+      <div class="profile-header">
+        <h3>Профиль</h3>
+        <button class="profile-close" id="profileClose">×</button>
+      </div>
+      <div class="profile-body">
+        <div class="profile-user">
+          <div class="profile-avatar-big" id="profAvatar">P</div>
+          <div class="profile-user-info">
+            <div class="profile-name-row">
+              <div class="profile-name" id="profName">Player</div>
+              <button class="profile-edit-btn" id="editNameBtn">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+              </button>
+            </div>
+            <div class="profile-id" id="profId">ID: 1</div>
+          </div>
+        </div>
+
+        <div class="best-drop-block">
+          <div class="best-drop-title">🏆 ЛУЧШИЙ ДРОП</div>
+          <div class="best-drop-content">
+            <div class="best-drop-img empty" id="bestDropImg">Пока нет дропа</div>
+            <div class="best-drop-name" id="bestDropName">—</div>
+            <div class="best-drop-meta" id="bestDropMeta">—</div>
+          </div>
+        </div>
+
+        <div class="profile-stats">
+          <div class="profile-stat-tile">
+            <div class="profile-stat-label">💰 Баланс</div>
+            <div class="profile-stat-value gold" id="profBalance">10 000 ₽</div>
+          </div>
+          <div class="profile-stat-tile">
+            <div class="profile-stat-label">Скинов</div>
+            <div class="profile-stat-value" id="profSkinsCount">0</div>
+          </div>
+          <div class="profile-stat-tile">
+            <div class="profile-stat-label">Апгрейдов</div>
+            <div class="profile-stat-value" id="profUpgradesCount">0</div>
+          </div>
+          <div class="profile-stat-tile">
+            <div class="profile-stat-label">🏆 Winrate</div>
+            <div class="profile-stat-value" id="profWinrate">0%</div>
+          </div>
+        </div>
+
+        <div class="profile-inv-title">Мой инвентарь</div>
+        <div class="profile-inv-grid" id="profileInvGrid"></div>
+
+        <div style="margin-bottom:16px;">
+          <button class="profile-sell-all" id="openPromoBtn" style="background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;">
+            Активировать промокод
+          </button>
+        </div>
+
+        <button class="profile-sell-all" id="sellAllBtn">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.93.66 1.73 1.66 1.98 1.03.26 2.24.06 2.24-1.13 0-1.03-1.03-1.36-2.5-1.75-1.71-.44-3.14-1.16-3.14-3.02 0-1.79 1.43-2.87 3.14-3.21V5h2.67v1.95c1.79.36 3.13 1.55 3.24 3.34h-1.98c-.08-1.14-.98-1.76-2-1.9-1.3-.18-2.1.45-2.1 1.23 0 .98 1.02 1.26 2.55 1.67 1.74.46 3.09 1.18 3.09 3.04 0 1.95-1.56 2.97-3.29 3.26z"/></svg>
+          Продать весь инвентарь
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= МОДАЛКА ИМЕНИ ================= -->
+  <div class="input-modal" id="nameModal">
+    <div class="input-box">
+      <h4>Изменить имя</h4>
+      <p>До 5 символов</p>
+      <input type="text" class="input-field" id="nameInput" maxlength="5" placeholder="Player">
+      <div class="input-row">
+        <button class="input-btn cancel" id="nameCancel">Отмена</button>
+        <button class="input-btn confirm" id="nameConfirm">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= МОДАЛКА ПРОМО ================= -->
+  <div class="input-modal" id="promoModal">
+    <div class="input-box">
+      <h4>Промокод</h4>
+      <p>Введите код</p>
+      <input type="text" class="input-field" id="promoInput" maxlength="20" placeholder="BONUS100" style="text-transform:uppercase;">
+      <div class="input-row">
+        <button class="input-btn cancel" id="promoCancel">Отмена</button>
+        <button class="input-btn confirm" id="promoConfirm">Активировать</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= МОДАЛКА КОРЗИНЫ ================= -->
+  <div class="input-modal" id="cartModal">
+    <div class="cart-modal-content">
+      <h4>🛒 Корзина</h4>
+      <div class="cart-list" id="cartList"></div>
+      <div class="cart-total">
+        <span>Итого:</span>
+        <span class="total-value" id="cartTotal">0 ₽</span>
+      </div>
+      <div class="cart-buttons">
+        <button class="input-btn cancel-all" id="cartCancelAll">Отмена</button>
+        <button class="input-btn confirm" id="cartBuyAll">Купить всё</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= МОДАЛКА ВЫБОРА СКИНА ДЛЯ КОНТРАКТА ================= -->
+  <div class="input-modal" id="contractPickModal">
+    <div class="input-box" style="max-width:440px;">
+      <h4>Выберите скин</h4>
+      <p>Нажмите на скин чтобы добавить его в контракт</p>
+      <div class="contract-pick-list" id="contractPickList"></div>
+      <div class="input-row">
+        <button class="input-btn cancel" id="contractPickClose" style="width:100%;">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= НИЖНЕЕ МЕНЮ ================= -->
+  <div class="bottom-nav">
+    <button class="nav-btn" id="navModes" data-screen="modes">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"/>
+        <circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none"/>
+        <circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/>
+        <circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/>
+        <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>Режимы</span>
+    </button>
+
+    <button class="nav-btn active" id="navUpgrade" data-screen="upgrade">
+      <svg viewBox="0 0 24 24">
+        <polyline points="6 15 12 9 18 15"/>
+        <polyline points="6 20 12 14 18 20"/>
+      </svg>
+      <span>Апгрейд</span>
+    </button>
+
+    <button class="nav-btn" id="navBonus" data-screen="bonus">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="8" width="18" height="13" rx="2"/>
+        <path d="M3 12h18"/>
+        <path d="M12 8v13"/>
+        <path d="M7 8c0-2 1-3 2.5-3S12 6 12 8"/>
+        <path d="M17 8c0-2-1-3-2.5-3S12 6 12 8"/>
+      </svg>
+      <span>Бонусы</span>
+    </button>
+  </div>
+
+</div> <!-- .app -->
+</body>
+</html>
+<script>
+/* ================= ЗВУКИ (Web Audio API) ================= */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playTone(freq, duration, type = 'sine', volume = 0.15, startAt = 0) {
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, audioCtx.currentTime + startAt);
+  gain.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + startAt + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startAt + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(audioCtx.currentTime + startAt);
+  osc.stop(audioCtx.currentTime + startAt + duration);
+}
+
+/* Мягкий клик */
+function playClick() { playTone(700, 0.04, 'sine', 0.06); }
+
+/* НОВОЕ: Приятный звук кручения (фортуна, замедляется к концу) */
+let tickInterval = null;
+let tickStartTime = 0;
+function startSpinSound() {
+  initAudio();
+  tickStartTime = Date.now();
+  let tick = 0;
+  let interval = 90;
+  function scheduleTick() {
+    if (!isSpinning) return;
+    const passed = Date.now() - tickStartTime;
+    // Частота тиков плавно замедляется
+    if (passed > 3000) interval = 180;
+    else if (passed > 2000) interval = 140;
+    else if (passed > 1000) interval = 110;
+    else interval = 90;
+    // Приятный мягкий звон (колокольчик)
+    playTone(1500 + (tick % 5) * 60, 0.05, 'sine', 0.05);
+    tick++;
+    tickInterval = setTimeout(scheduleTick, interval);
+  }
+  scheduleTick();
+}
+function stopSpinSound() {
+  if (tickInterval) { clearTimeout(tickInterval); clearInterval(tickInterval); tickInterval = null; }
+}
+
+/* Победа — мажорный аккорд */
+function playWin() {
+  playTone(523.25, 0.15, 'sine', 0.15, 0);
+  playTone(659.25, 0.15, 'sine', 0.15, 0.12);
+  playTone(783.99, 0.25, 'sine', 0.18, 0.24);
+  playTone(1046.5, 0.4, 'sine', 0.2, 0.4);
+}
+
+/* Проигрыш — глухой низкий */
+function playLose() {
+  playTone(392, 0.2, 'sine', 0.12, 0);
+  playTone(311.13, 0.2, 'sine', 0.12, 0.15);
+  playTone(233.08, 0.5, 'sine', 0.15, 0.3);
+}
+
+/* Деньги */
+function playCash() {
+  playTone(1318.51, 0.08, 'sine', 0.15, 0);
+  playTone(1567.98, 0.12, 'sine', 0.18, 0.06);
+}
+
+/* Звук открытия кейса — механический, в стиле CS2 */
+function playCaseOpen() {
+  playTone(300, 0.04, 'triangle', 0.08, 0);
+  playTone(400, 0.04, 'triangle', 0.08, 0.06);
+  playTone(350, 0.04, 'triangle', 0.08, 0.12);
+  playTone(450, 0.04, 'triangle', 0.09, 0.18);
+  playTone(500, 0.05, 'triangle', 0.1, 0.24);
+  playTone(880, 0.12, 'sine', 0.14, 0.32);
+  playTone(1100, 0.15, 'sine', 0.16, 0.42);
+  playTone(1500, 0.35, 'sine', 0.18, 0.55);
+}
+
+/* Звук контракта в стиле CS2 */
+function playContractResult(win) {
+  if (win) {
+    playTone(400, 0.06, 'triangle', 0.1, 0);
+    playTone(500, 0.06, 'triangle', 0.1, 0.08);
+    playTone(600, 0.06, 'triangle', 0.1, 0.16);
+    playTone(700, 0.06, 'triangle', 0.1, 0.24);
+    playTone(880, 0.1, 'sine', 0.13, 0.32);
+    playTone(1200, 0.15, 'sine', 0.15, 0.45);
+    playTone(1600, 0.4, 'sine', 0.18, 0.6);
+  } else {
+    playTone(500, 0.08, 'triangle', 0.1, 0);
+    playTone(400, 0.08, 'triangle', 0.1, 0.1);
+    playTone(300, 0.08, 'triangle', 0.1, 0.2);
+    playTone(200, 0.5, 'sine', 0.13, 0.3);
+  }
+}
+
+/* Звук прокрутки ленты кейса */
+function playStripTick() {
+  playTone(1800 + Math.random() * 400, 0.02, 'sine', 0.03);
+}
+</script>
+<script>
+/* ================= КУРС ВАЛЮТ ================= */
+const USD_RATE = 84.24;
+
+/* ================= КОЭФФИЦИЕНТЫ КАЧЕСТВ ================= */
+const QUALITY_MULT = {
+  FN: 1.00,
+  MW: 0.55,
+  FT: 0.30,
+  WW: 0.22,
+  BS: 0.16
+};
+const QUALITY_LIST = ['FN', 'MW', 'FT', 'WW', 'BS'];
+const ST_MULT = 1.75;
+
+/* ================= БАЗОВЫЕ СКИНЫ (временный список) ================= */
+const BASE_CATALOG = [
+  { baseId: 'awp_dragon_lore', weapon: 'AWP', skinName: 'Dragon Lore', rarity: 'covert', cat: 'skin',
+    priceUSD: 11788,
+    qualities: ['FT', 'WW', 'FN'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfbWVkaWV2YWxfZHJhZ29uX2F3cF9saWdodC45MDc2ODlkZmJlMThkZGViZWMxMDU1Y2E0MTUxYjgyZjcyNjVjZDY3LnBuZw--/auto/auto/85/notrim/988bf7c729a627e1f4dbabc774308c89.webp' },
+  { baseId: 'awp_asiimov', weapon: 'AWP', skinName: 'Asiimov', rarity: 'covert', cat: 'skin',
+    priceUSD: 111,
+    qualities: ['FT', 'WW', 'BS'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfYXdwX2FzaW1vdl9tZWRpdW0uMjU4ZGViN2M1OWIxOGIxOTM4MDI4YmRjZjhiYmUzZmFiMmQ4N2Q1Ni5wbmc-/auto/auto/85/notrim/1592f975894842d9c8c906f8124c7f5d.webp' },
+  { baseId: 'awp_crakow', weapon: 'AWP', skinName: 'Crakow', rarity: 'restricted', cat: 'skin',
+    priceUSD: 21,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3Vfb3ZlcnBhc3NfY3Jha293X2F3cF9saWdodC40ZDA0ZmUxYzdmMGIwNDNjZGZmZmE2Y2VkOGI5NTYzOGM5NzVjODExLnBuZw--/auto/auto/85/notrim/3cf362fb7daa0b0b53c59378bb014286.webp' },
+  { baseId: 'awp_green_energy', weapon: 'AWP', skinName: 'Green Energy', rarity: 'restricted', cat: 'skin',
+    priceUSD: 3,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VlX2p1bXBfbGluZV9saWdodC4wOGRjYWY1OTllNGY3YmIwMWNmYTQzN2RlZTliYTIyMDUwZmI0ZjAwLnBuZw--/auto/auto/85/notrim/22b27155b35dec7e6e35191ed8873899.webp' },
+
+  { baseId: 'ak_redline', weapon: 'AK-47', skinName: 'Redline', rarity: 'classified', cat: 'skin',
+    priceUSD: 27,
+    qualities: ['FT', 'WW', 'BS'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfY29icmFfbGlnaHQuMTI1NWNkNzliOTljZGFkMDZmNjljNzQwY2YwN2E1MjMxMDY3YWIxYy5wbmc-/auto/auto/85/notrim/7bcb6ae7793940cacb5d2686f4a798c4.webp' },
+  { baseId: 'ak_bloodsport', weapon: 'AK-47', skinName: 'Bloodsport', rarity: 'covert', cat: 'skin',
+    priceUSD: 158,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2dzX2FrNDdfYmxvb2RzcG9ydF9saWdodC42ZmIwY2I3ODY0MTBmMzFmZWU5YWNhMDJkZmU0MDNkZjQwY2JjMzg5LnBuZw--/auto/auto/85/notrim/f1fedf28229c81421170b77aa1fa1036.webp' },
+  { baseId: 'ak_case_hardened', weapon: 'AK-47', skinName: 'Case Hardened', rarity: 'classified', cat: 'skin',
+    priceUSD: 168,
+    qualities: ['MW', 'FT', 'WW', 'BS'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2FxX29pbGVkX2xpZ2h0LmJkN2VkMzM3NzlhZDIwYjZjNzhiN2FhMWIzZjNlOTcyZjU5ZGY2YTYucG5n/auto/auto/85/notrim/0c11314e8c96f37addaa4996e703759c.webp' },
+  { baseId: 'ak_asiimov', weapon: 'AK-47', skinName: 'Asiimov', rarity: 'covert', cat: 'skin',
+    priceUSD: 40,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfYXNpaW1vdl9saWdodC5jYmMwOGZjN2Q3OTRhMGIyMGJjZGJiYjIwZDAxNTZlODkyZWY4ZmU0LnBuZw--/auto/auto/85/notrim/36a4387d75073b1d029100a4e7e39f4b.webp' },
+  { baseId: 'ak_consequence_jinn', weapon: 'AK-47', skinName: 'Consequence of the Jinn', rarity: 'covert', cat: 'skin',
+    priceUSD: 82,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2FrNDdfamlubl9jb25zZXF1ZW5jZV9saWdodC5jYzI3NDA3YzRiMWQ0OGYwN2NjYzg1MjdkMjFkZGI1YjA1NWYzODlkLnBuZw--/auto/auto/85/notrim/4608f4e8677b2aff8286ce90b4338032.webp' },
+
+  { baseId: 'm4a4_howl', weapon: 'M4A4', skinName: 'Howl', rarity: 'contraband', cat: 'skin',
+    priceUSD: 11000,
+    qualities: ['FN', 'MW'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2N1X200YTFfaG93bGluZ19saWdodC41NTRlN2ZiZjIwMGViM2VjZDU3NGM5OGViMmU1ODIzNTkzN2VmMzAxLnBuZw--/auto/auto/85/notrim/e8a5fe8044802a8c18fc98ea0257712c.webp' },
+  { baseId: 'm4a4_falak', weapon: 'M4A4', skinName: 'Falak', rarity: 'covert', cat: 'skin',
+    priceUSD: 68,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX200YTRfZmFsYWtfbGlnaHQuMzY4ZjIzZmYxNWUwOWEzODYyNTkyOWM5YWNjMWQ4ZjhlZThmZDBiZi5wbmc-/auto/auto/85/notrim/0886d293ebbf88cb139260c2aa78a809.webp' },
+  { baseId: 'm4a4_emperor', weapon: 'M4A4', skinName: 'The Emperor', rarity: 'covert', cat: 'skin',
+    priceUSD: 55,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2dzX200YTRfZW1wZXJvcl9saWdodC4yZDE0Y2JlMmRkMzMyMDUwODhlZWJmMGRkODMyZGEwNmU2ZmMzODAwLnBuZw--/auto/auto/85/notrim/73a2e5737bc2bb54ede0bc260a962c28.webp' },
+  { baseId: 'm4a4_evil_daimyo', weapon: 'M4A4', skinName: 'Evil Daimyo', rarity: 'covert', cat: 'skin',
+    priceUSD: 9,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2N1X200YTRfZXZpbF9kYWlteW9fbGlnaHQuMjdmNTBiNTllZDgyYTI2YWY3ODI1MWNmOGNlNWNmMzk4YmM4ZGJkYy5wbmc-/auto/auto/85/notrim/1163d8f076fb4af62c91c5c0fd38036f.webp' },
+  { baseId: 'm4a4_eye_horus', weapon: 'M4A4', skinName: 'Eye of Horus', rarity: 'covert', cat: 'skin',
+    priceUSD: 1300,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2dzX200YTRfcmFfbGlnaHQuMjJmNTE3NWZjZDQ4YTBkZWRiYzc5ZmVlZmYwMzJkYTgyYThmM2E5Mi5wbmc-/auto/auto/85/notrim/478adac587a31f7c2de0feb482188fde.webp' },
+  { baseId: 'm4a4_asiimov', weapon: 'M4A4', skinName: 'Asiimov', rarity: 'covert', cat: 'skin',
+    priceUSD: 65,
+    qualities: ['MW', 'FT', 'WW', 'BS'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2N1X200X2FzaW1vdl9tZWRpdW0uY2Q1M2M4OWY0YWNkOTc0NjQ1M2E2NWExZTdjYzk1OGZkZDViOWM4Yy5wbmc-/auto/auto/85/notrim/314327a93c7fcbed3a0cd7910457b93e.webp' },
+
+  { baseId: 'm4a1s_printstream', weapon: 'M4A1-S', skinName: 'Printstream', rarity: 'covert', cat: 'skin',
+    priceUSD: 320,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX3NpbGVuY2VyX2N1X200YTFzX3ByaW50c3RyZWFtX2xpZ2h0LmNmMGZlMjNjNzhmN2FlMmRhODMxN2MzZGNhYzU1ODMzNzY2ZTkzYzYucG5n/auto/auto/85/notrim/badf8ce4d9ce87b619bbf77cf822a5e1.webp' },
+  { baseId: 'm4a1s_fatal_glitch', weapon: 'M4A1-S', skinName: 'Fatal Glitch', rarity: 'covert', cat: 'skin',
+    priceUSD: 45,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX3NpbGVuY2VyX2h5ZV9zcHlnbGl0Y2hfZ3JlZW5fbTRhMXNfbGlnaHQuY2M4YzViNDk2M2FiMjliOWVhNWRiODVjYWJhYWJmNTNkYmY3NGM1ZS5wbmc-/auto/auto/85/notrim/7acc48d127b55ea08289bad58f118639.webp' },
+  { baseId: 'm4a1s_party_animal', weapon: 'M4A1-S', skinName: 'Party Animal', rarity: 'covert', cat: 'skin',
+    priceUSD: 60,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX3NpbGVuY2VyX2h5ZV9hbmltYWxfcHJpbnRfOTBzX2xpZ2h0LjVhZmMyY2Q5ZmFiMjA3M2NiZjg3Y2E1NGIzY2NmYjU1MGZmMDgwMDgucG5n/auto/auto/85/notrim/366a2b29c476834bb764264dd037e8cd.webp' },
+
+  { baseId: 'deagle_blaze', weapon: 'Desert Eagle', skinName: 'Blaze', rarity: 'restricted', cat: 'skin',
+    priceUSD: 650,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfYWFfZmxhbWVzX2xpZ2h0LjNmNzM1MjI4YTU4YmM1Yjk2M2RiNDEzZmI0NTk5Mzc1MjM5NWE4MzEucG5n/auto/auto/85/notrim/6a582eadb9de6f02db3aa8fa9407951c.webp' },
+  { baseId: 'deagle_printstream', weapon: 'Desert Eagle', skinName: 'Printstream', rarity: 'covert', cat: 'skin',
+    priceUSD: 130,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfY3VfZGVhZ19wcmludHN0cmVhbV9saWdodC5iZWFhZDc5Y2ViYjNiNjAzNjBjZjFlYjRlZTk1MmFhNzM4OTk5NWUxLnBuZw--/auto/auto/85/notrim/cbd9fe953821dc0cb887f121a74d73e9.webp' },
+  { baseId: 'deagle_heat_treated', weapon: 'Desert Eagle', skinName: 'Heat Treated', rarity: 'restricted', cat: 'skin',
+    priceUSD: 25,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfYXFfZGVhZ2xlX2Nhc2VfaGFyZGVuZWRfMl9saWdodC43OTlkZmQ4NWE1OGU4ZTc1YmY2Y2NiODg1MGQ4OTVlNDQwZWFhZjFhLnBuZw--/auto/auto/85/notrim/90da1a713f99d1a5017b4ef6ee91f585.webp' },
+  { baseId: 'deagle_emerald_jormungandr', weapon: 'Desert Eagle', skinName: 'Emerald Jörmungandr', rarity: 'covert', cat: 'skin',
+    priceUSD: 850,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfYW1fam9ybV9ncmVlbl9saWdodC5iODk3ZTMzY2QwZTk3M2NkZjdhNzA2ZTY0NmQ3NDljYTE5OTExODIxLnBuZw--/auto/auto/85/notrim/0922977d934c87bbb385d5104dd7193c.webp' },
+
+  { baseId: 'glock_ghost_protocol', weapon: 'Glock-18', skinName: 'Ghost Protocol', rarity: 'restricted', cat: 'skin',
+    priceUSD: 12,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nbG9ja19nbG9ja19naG9zdF9wcm90b2NvbF9yZWRfbGlnaHQuN2Q4MTBhNDM3YzE1NjgyMjRkZTIxZTEyZGJlMDE2NmMxMGMxNjc0My5wbmc-/auto/auto/85/notrim/3ed364190753e5511e8d3dc4ff6074be.webp' },
+  { baseId: 'glock_fully_tuned', weapon: 'Glock-18', skinName: 'Fully Tuned', rarity: 'restricted', cat: 'skin',
+    priceUSD: 8,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nbG9ja19nbG9ja19qZHBlZWtfbGlnaHQuMGY2MWI0YzM5MjNjZGM3NDBmMzBkMjA0ZGJiMjRkZjk5MmM3OTAzMC5wbmc-/auto/auto/85/notrim/d97f593ce029025cdb22b50dbade4eee.webp' },
+  { baseId: 'glock_trace_lock', weapon: 'Glock-18', skinName: 'Trace Lock', rarity: 'milspec', cat: 'skin',
+    priceUSD: 2,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nbG9ja19odF93aGl0ZV9lZGdlc19saWdodC45NmNjYTU5NmE0YzEzNmViYWRiZGZjYzYzNjdlMjBhNDBiZWVhYzFjLnBuZw--/auto/auto/85/notrim/7271474d4345b4113a4f6e90659738cc.webp' },
+
+  { baseId: 'usp_sleeping_potion', weapon: 'USP-S', skinName: 'Sleeping Potion', rarity: 'restricted', cat: 'skin',
+    priceUSD: 15,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfc29lX3B1cnBsZV9saWdodC43NTNmOThmYzgwMzlkYjA3MTZkZDU3M2IwOGNkZWZiNGJmZmEyMzBlLnBuZw--/auto/auto/85/notrim/78d272195a611b738f701ca50b5cf492.webp' },
+  { baseId: 'usp_kill_confirmed', weapon: 'USP-S', skinName: 'Kill Confirmed', rarity: 'covert', cat: 'skin',
+    priceUSD: 100,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfY3VfdXNwX2tpbGxfY29uZmlybWVkX2xpZ2h0LjEyNzc0OTRkYmEzZWU5Yzc3MzY5ZTBlODY2ZGU2NjZmOTQ3NDAyMDMucG5n/auto/auto/85/notrim/7ecfcd212e30dfe6ff664152aa89db35.webp' },
+  { baseId: 'usp_printstream', weapon: 'USP-S', skinName: 'Printstream', rarity: 'covert', cat: 'skin',
+    priceUSD: 130,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfY3VfdXNwX3ByaW50c3RyZWFtX2xpZ2h0LjZjNTY2NTRkMWZiMWExM2UzZmJmNzE4OGE5MzZiZGQ1NzA5YmJhN2YucG5n/auto/auto/85/notrim/8403ea9c06b8afb0d16209b7e5db5115.webp' },
+
+  { baseId: 'dual_angel_eyes', weapon: 'Dual Berettas', skinName: 'Angel Eyes', rarity: 'restricted', cat: 'skin',
+    priceUSD: 5,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9lbGl0ZV9kdWFsX2VsaXRlX2JpYmxpY2FsX2FuZ2VsX2xpZ2h0LjFjMzVjNjY3ZWYwY2U1YzI4NDgxZDRiM2JmZTJhMjkwNTllODY1NTAucG5n/auto/auto/85/notrim/1a42dfedbf217632dc52106bc9f6e2c2.webp' },
+  { baseId: 'dual_melondrama', weapon: 'Dual Berettas', skinName: 'Melondrama', rarity: 'restricted', cat: 'skin',
+    priceUSD: 4,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9lbGl0ZV9jdV9lbGl0ZXNfYmV3YXJlX2xpZ2h0LmQwOWVkZjEyOWRkMzk3NjU5MmViMDRhNTMzOWZlOWViMzc0YjZlOGMucG5n/auto/auto/85/notrim/fd2c26e6f75360bdfaabb28720d4da3f.webp' },
+  { baseId: 'dual_duelist', weapon: 'Dual Berettas', skinName: 'Duelist', rarity: 'restricted', cat: 'skin',
+    priceUSD: 6,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9lbGl0ZV9nc19tb3RoZXJfb2ZfcGVhcmxfZWxpdGVfbGlnaHQuYjIzZjkyZjEyZTQ3NDU0ZjBmNjM1ZDUyOWNmOGMzYmFkYjVjYTNmNy5wbmc-/auto/auto/85/notrim/499a4071972c81f5c2923d9ccb72967b.webp' },
+
+  { baseId: 'zeus_olympus', weapon: 'Zeus x27', skinName: 'Olympus', rarity: 'restricted', cat: 'skin',
+    priceUSD: 35,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl90YXNlcl96ZXVzX3RodW5kZXJfZ29kX2xpZ2h0LjI3MjU1Y2UxNThiMTM3ODUxODMxMzY4MzcxNmI2N2JlYjc1Nzc4NDMucG5n/auto/auto/85/notrim/6229779a7bdf88489e7a0f2b640ade66.webp' },
+  { baseId: 'zeus_charged_up', weapon: 'Zeus x27', skinName: 'Charged Up', rarity: 'restricted', cat: 'skin',
+    priceUSD: 8,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl90YXNlcl96ZXVzX3N0YW5kYXJkX2lzc3VlX2xpZ2h0LmMyNGVjMDBlODk3ZWFiZmZjMTU1ZjJhMjliYmEwY2ZiYmE0YjE1ZTEucG5n/auto/auto/85/notrim/3d480148322cfe7b8acbc368e0cb6550.webp' },
+
+  { baseId: 'nova_hyper_beast', weapon: 'Nova', skinName: 'Hyper Beast', rarity: 'covert', cat: 'skin',
+    priceUSD: 30,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9ub3ZhX2N1X25vdmFfaHlwZXJiZWFzdF9saWdodC5iMjM0NWY2ZWY0OTBiODY4YTE3ZmNjM2I0N2ViOGVlMDAzMDEyZGJhLnBuZw--/auto/auto/85/notrim/2e1b5744567e5effcdb1f3869eecc718.webp' },
+  { baseId: 'nova_rising_sun', weapon: 'Nova', skinName: 'Rising Sun', rarity: 'restricted', cat: 'skin',
+    priceUSD: 6,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9ub3ZhX25vdmFfcmlzaW5nX3N1bl9saWdodC5iYjk5MWI0MzkwY2IzODViZmE1Y2YwOWI5MjkxODM2OTA3MTAwNGI0LnBuZw--/auto/auto/85/notrim/273e0c12639df3318fe5c43a8b412934.webp' },
+
+  { baseId: 'p90_deathgaze', weapon: 'P90', skinName: 'Deathgaze', rarity: 'covert', cat: 'skin',
+    priceUSD: 40,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9wOTBfcDkwX2RlYXRoZ2F6ZV9saWdodC42ODNjODM5ZmU2YWI4MjM1MDYwNTQ4MDk0MmI0NjRiNGE0NmM4NTQ0LnBuZw--/auto/auto/85/notrim/1e12c72fffeddb0388fa2f4c8901cd5c.webp' },
+  { baseId: 'p90_asiimov', weapon: 'P90', skinName: 'Asiimov', rarity: 'covert', cat: 'skin',
+    priceUSD: 20,
+    qualities: ['FT', 'WW', 'BS'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9wOTBfY3VfcDkwLWFzaWltb3ZfbGlnaHQuNmI5YjgzY2Y0ZmE3OWE3MjEzMGZkODQ1NWVlZTgyNDNkNWJiZDQwZC5wbmc-/auto/auto/85/notrim/46d28b3c0f2691d3bea48ca247c7d56e.webp' },
+
+  { baseId: 'bizon_traitor', weapon: 'PP-Bizon', skinName: 'Traitor', rarity: 'restricted', cat: 'skin',
+    priceUSD: 5,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9iaXpvbl9iaXpvbl90cmFpdG9yX2xpZ2h0Ljg1MGI3MzE1MWI4MDc2ZTFiZjFkYjAzMDczZDQ4NDEyYjZlMTBkNTgucG5n/auto/auto/85/notrim/92e023fe7876deb623e3ac0bd8a46a73.webp' },
+
+  { baseId: 'famas_rapid_eye', weapon: 'FAMAS', skinName: 'Rapid Eye Movement', rarity: 'covert', cat: 'skin',
+    priceUSD: 25,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9mYW1hc19nc19mYW1hc19yYXBpZF9leWVzX2xpZ2h0LmI2ODYxMWY3MDg4YWE0ZGVlOTExYTY0MmNlNzVhNGM3MzI2OGE1NmEucG5n/auto/auto/85/notrim/6bfb0e5c9f8a7d2aab6318612e2800fa.webp' },
+  { baseId: 'famas_roll_cage', weapon: 'FAMAS', skinName: 'Roll Cage', rarity: 'classified', cat: 'skin',
+    priceUSD: 8,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9mYW1hc19nc19mYW1hc19yYWxseV9saWdodC5jYWQ4ODhhNzQwNjEzYjYyN2E4M2FhYjcxNDU2ZmU0ZjE0YzE4ZTRiLnBuZw--/auto/auto/85/notrim/12823161272accf72511bba6e6a3b3e3.webp' },
+  { baseId: 'famas_yeti_camo', weapon: 'FAMAS', skinName: 'Yeti Camo', rarity: 'milspec', cat: 'skin',
+    priceUSD: 2,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9mYW1hc19zb2VfYmx1ZV9mYW1hc19saWdodC5jOGUxMDE1OTk4YjViMTFjYTVjODJhOWNhYzk3ZWQ3OGFlYTViZTZjLnBuZw--/auto/auto/85/notrim/1ddd4e6bae9e64d1792e83d956c30837.webp' },
+
+  { baseId: 'ssg08_death_strike', weapon: 'SSG 08', skinName: 'Death Strike', rarity: 'covert', cat: 'skin',
+    priceUSD: 90,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9zc2cwOF9jdV9zc2cwOF9zY29ycGlvbl9saWdodC44NzczYWQyZDdkYjE1ZTc5OTlmY2JkNThkMjFjZGU2M2NkODIzODhmLnBuZw--/auto/auto/85/notrim/12da06a841962b39c1a90b5bf7039daa.webp' },
+  { baseId: 'ssg08_sea_calico', weapon: 'SSG 08', skinName: 'Sea Calico', rarity: 'restricted', cat: 'skin',
+    priceUSD: 12,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9zc2cwOF9oeV9mbG93ZXJzX3N0bWFyY19saWdodC4yZWJhZTRlZjhiOWU0NzljODQyMTdhNzA3MGI2MjNlNWIwMzkwYjRmLnBuZw--/auto/auto/85/notrim/b5bf8f61ccf3c34c198f5dda29974bb3.webp' },
+
+  { baseId: 'g3sg1_meadow', weapon: 'G3SG1', skinName: 'Meadow', rarity: 'restricted', cat: 'skin',
+    priceUSD: 8,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nM3NnMV9jdV9nM3NnMV9nbGFkZV9saWdodC42MTIxMWUxOWQ0MjU4MjliMWQzMDEyY2M4MDNkZjJiMTE5ZmY0OWQ3LnBuZw--/auto/auto/85/notrim/e45f5c2056221da3917f2b67734094fb.webp' },
+  { baseId: 'g3sg1_stinger', weapon: 'G3SG1', skinName: 'Stinger', rarity: 'restricted', cat: 'skin',
+    priceUSD: 10,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nM3NnMV9nc19nM3NnMV92aXBlcl95ZWxsb3dfbGlnaHQuY2EzZjkyMDUxYzBkZTJkZWY1NDAwYzdjYTYxZWU4ZDIzMDBkN2QzNC5wbmc-/auto/auto/85/notrim/48146783f7f02cc6008401b59f40dec3.webp' },
+
+  { baseId: 'sg553_hazard_pay', weapon: 'SG 553', skinName: 'Hazard Pay', rarity: 'restricted', cat: 'skin',
+    priceUSD: 10,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9zZzU1Nl9jdV9zZzU1M19jYXV0aW9uX2xpZ2h0LjhmOWUyY2I0ZTRjNzIxNzA3ZGY2ODJjYjk2Y2U0OTgwNTk4NGZmODkucG5n/auto/auto/85/notrim/eb0516112fd9c624a12a4b6847031126.webp' },
+
+  { baseId: 'aug_akihabara_accept', weapon: 'AUG', skinName: 'Akihabara Accept', rarity: 'covert', cat: 'skin',
+    priceUSD: 1200,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hdWdfY3VfYW5pbWVfYXVnX2xpZ2h0LjMyNjAzNTJiNmY5OGRiYzYyMzlhNmQxNTg3ZTlkYjhiYzU3MTMzMzgucG5n/auto/auto/85/notrim/d2f38a3e4d5cdae8ad83b247740b4a22.webp' },
+
+  { baseId: 'galil_chatterbox', weapon: 'Galil AR', skinName: 'Chatterbox', rarity: 'covert', cat: 'skin',
+    priceUSD: 180,
+    qualities: ['MW', 'FT', 'WW', 'BS'],
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nYWxpbGFyX2N1X2dhbGlsX2FicmFzaW9uX21lZGl1bS5mNWE2ODlmN2FkYWQxMDhkOWFiNzUyOTY0YzVmNDQ1ZDJhNjljN2ZkLnBuZw--/auto/auto/85/notrim/cb68ae9c7b36fbdba56a4d75b54069a3.webp' },
+
+  /* ================= НОЖИ ================= */
+  { baseId: 'butterfly_gamma_doppler_emerald', weapon: '★ Butterfly Knife', skinName: 'Gamma Doppler', rarity: 'covert', cat: 'knife',
+    priceUSD: 6500, statTrak: true, phases: 'gamma_doppler',
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9idXR0ZXJmbHlfYW1fZW1lcmFsZF9tYXJibGVpemVkX2xpZ2h0LjA2YTg4YmRkNjdlMjFiNGI1MzNkYWUwMGZlNDRlMWNkOGViY2VlZDAucG5n/auto/auto/85/notrim/9622430aef6d6792c8cf199cba33eab4.webp' },
+  { baseId: 'butterfly_freehand', weapon: '★ Butterfly Knife', skinName: 'Freehand', rarity: 'covert', cat: 'knife',
+    priceUSD: 850, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9idXR0ZXJmbHlfYW1fbWFya2VkX3VwXzkwX2xpZ2h0LmY3N2U4NjlkN2U0NjAyMzEyYWQwZjIyZGUxMmI0NTYxZWM1YjNhZGUucG5n/auto/auto/85/notrim/50e2be9b525b3497cd9ddacade339018.webp' },
+  { baseId: 'kukri_case_hardened', weapon: '★ Kukri Knife', skinName: 'Case Hardened', rarity: 'covert', cat: 'knife',
+    priceUSD: 280, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9rdWtyaV9hcV9vaWxlZF9saWdodC4xMjQxY2E1ODA3NjMwYjAyYzUxNjIzNGI3Y2VhZjAyZGZhOThmNWM5LnBuZw--/auto/auto/85/notrim/677cc39b902b286725626227d12d8f6c.webp' },
+  { baseId: 'butterfly_black_laminate', weapon: '★ Butterfly Knife', skinName: 'Black Laminate', rarity: 'covert', cat: 'knife',
+    priceUSD: 1200, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9idXR0ZXJmbHlfZ3NfYnV0dGVyZmx5X2JsYWNrX2xhbWluYXRlX2xpZ2h0LjEzNmY0NDQ0NjU0MTA4ZjMxZGEyZWFiNjJkNmM4MjhmYzk3ZGM0MDYucG5n/auto/auto/85/notrim/b2d0940f61073442e7e1266bae9c7bac.webp' },
+  { baseId: 'kukri_crimson_web', weapon: '★ Kukri Knife', skinName: 'Crimson Web', rarity: 'covert', cat: 'knife',
+    priceUSD: 380, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9rdWtyaV9oeV93ZWJzX2xpZ2h0LmY3YTQ4OWVkNjhjN2U1MjVkYjkyNzY1ZjNlY2YzOTFhOTMxN2Q2YzcucG5n/auto/auto/85/notrim/b2bcd15906f268aab21ae4919650ff73.webp' },
+  { baseId: 'butterfly_autotronic', weapon: '★ Butterfly Knife', skinName: 'Autotronic', rarity: 'covert', cat: 'knife',
+    priceUSD: 1500, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9idXR0ZXJmbHlfZ3NfYnV0dGVyZmx5X2F1dG90cm9uaWNfbGlnaHQuZDE4M2I4OGI2MGFhZjhlOWI2MTU4MzZjZWJiYjIzYWQwMzhiOWUzNy5wbmc-/auto/auto/85/notrim/ad05dcc60d9dd6a1b24c9144a8b68b5e.webp' },
+  { baseId: 'bayonet_lore', weapon: '★ Bayonet', skinName: 'Lore', rarity: 'covert', cat: 'knife',
+    priceUSD: 700, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9iYXlvbmV0X2N1X2JheW9uZXRfbG9yZV9saWdodC45NDJjOWEzMmUzMzE3OWNhZWY3NmYyZGFjZmU0ZmVhMDMyNjNlNWM5LnBuZw--/auto/auto/85/notrim/560608952fb3abbe5b8652fde5c359eb.webp' },
+  { baseId: 'skeleton_damascus_steel', weapon: '★ Skeleton Knife', skinName: 'Damascus Steel', rarity: 'covert', cat: 'knife',
+    priceUSD: 550, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9za2VsZXRvbl9hcV9kYW1hc2N1c19saWdodC5jNjNmM2UwYTdiYzllYWY5ZWU5N2I2MGU1OTgyNWM2OGEzMTUxYWE1LnBuZw--/auto/auto/85/notrim/df22301b705c2c949c8dbc2930e761ff.webp' },
+  { baseId: 'falchion_lore', weapon: '★ Falchion Knife', skinName: 'Lore', rarity: 'covert', cat: 'knife',
+    priceUSD: 300, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9mYWxjaGlvbl9jdV9mYWxjaGlvbl9sb3JlX2xpZ2h0LmU1ZTIwMmNkYTVlYzNmZTg0N2U4ZTdmYWRmMzZjOWY2MjNhOWYwODkucG5n/auto/auto/85/notrim/b64017e4167ef26dfd2b7c8beab3299f.webp' },
+  { baseId: 'karambit_blue_steel', weapon: '★ Karambit', skinName: 'Blue Steel', rarity: 'covert', cat: 'knife',
+    priceUSD: 900, statTrak: true,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9rYXJhbWJpdF9hcV9ibHVlZF9saWdodC5hMjhhOTUxZDNiNDFkOWQwOGI4NGJiZGQ1YzcyOGUzNWY0NTY3OWFiLnBuZw--/auto/auto/85/notrim/d9f0ddd14f3ab6e9d3f78137e35beae3.webp' },
+
+  /* ================= ПЕРЧАТКИ (1/2) ================= */
+  { baseId: 'gloves_vice', weapon: '★ Sport Gloves', skinName: 'Vice', rarity: 'covert', cat: 'gloves',
+    priceUSD: 2000, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3Nwb3J0eV9nbG92ZXNfc3BvcnR5X2JsdWVfcGlua19saWdodC5jNTJkMGVmYWE5NjJmMWI4ZTQyZTY2ODVhZmNiYmU1MWU5YjU4ZTExLnBuZw--/auto/auto/85/notrim/e15230ee5c642f5c420775697d795a06.webp' },
+  { baseId: 'gloves_wave_chaser', weapon: '★ Driver Gloves', skinName: 'Wave Chaser', rarity: 'covert', cat: 'gloves',
+    priceUSD: 800, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3NsaWNrX2dsb3Zlc19nbG92ZV9kcml2ZXJfc2lsa19kcmFnb25fd2hpdGVfbGlnaHQuZWY2NDVjNzY4YjJkM2JlOTllOThmMjk4ZjEwOWM0M2UyMWQ1YjcxNS5wbmc-/auto/auto/85/notrim/c8b92ed9d37050184953fbcdc0c8d953.webp' },
+  { baseId: 'gloves_amphibious', weapon: '★ Sport Gloves', skinName: 'Amphibious', rarity: 'covert', cat: 'gloves',
+    priceUSD: 1400, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3Nwb3J0eV9nbG92ZXNfc3BvcnR5X3BvaXNvbl9mcm9nX2JsdWVfd2hpdGVfbGlnaHQuMmZkYWIzMjdiNGY2ZmM2YjE1ODYwZWFhMjg2ZWM2ZDcwYWE5NDZmZi5wbmc-/auto/auto/85/notrim/af90318665c5d5a365c76e9fa2d07268.webp' },
+  { baseId: 'gloves_pandora_box', weapon: '★ Sport Gloves', skinName: "Pandora's Box", rarity: 'covert', cat: 'gloves',
+    priceUSD: 2200, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3Nwb3J0eV9nbG92ZXNfc3BvcnR5X3B1cnBsZV9saWdodC42YzFkZjVlNDZkM2E2YjZlMmE2NjFkNGFhNGUwODRhMmRmMWMwZjg5LnBuZw--/auto/auto/85/notrim/98df14c056b65776a1a31a1582e58a64.webp' },
+  { baseId: 'gloves_ultra_violent', weapon: '★ Sport Gloves', skinName: 'Ultra Violent', rarity: 'covert', cat: 'gloves',
+    priceUSD: 700, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3Nwb3J0eV9nbG92ZXNfZ2xvdmVfc3BvcnRfdGVjaF9ncmFkaWVudF9icmlnaHRfbGlnaHQuZjExOGFlYjI3MjFmYjNjNTJkZmVlM2QwMGNkY2JkNDBjNTdmZTQ2NC5wbmc-/auto/auto/85/notrim/daa19e7afd1a4bd8811f8197787d0ae0.webp' },
+
+  { baseId: 'gloves_hedge_maze', weapon: '★ Sport Gloves', skinName: 'Hedge Maze', rarity: 'covert', cat: 'gloves',
+    priceUSD: 1800, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3Nwb3J0eV9nbG92ZXNfc3BvcnR5X2dyZWVuX2xpZ2h0LjgyZGUxNGIxNTIyNGI3NTkyYmMxOGEwZGQyZTg3YzFkMmE2YzNkMDAucG5n/auto/auto/85/notrim/eba4b032dc5c20b8c2df5851287ac55d.webp' },
+  { baseId: 'gloves_blackbook', weapon: '★ Specialist Gloves', skinName: 'Blackbook', rarity: 'covert', cat: 'gloves',
+    priceUSD: 350, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3NwZWNpYWxpc3RfZ2xvdmVzX2dsb3ZlX3NwZWNpYWxpc3RfZ3JhZmZpdGlfYmxhY2tfbGlnaHQuZjhkZWMwNzczMDZhNDg0NmZkNzFmMzM2ZDZmZGMzOTFhMWJiZDI2MC5wbmc-/auto/auto/85/notrim/8cd8e82a9ecc19557f0e2526ce5b7578.webp' },
+  { baseId: 'gloves_cobalt_skulls', weapon: '★ Hand Wraps', skinName: 'Cobalt Skulls', rarity: 'covert', cat: 'gloves',
+    priceUSD: 900, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL2xlYXRoZXJfaGFuZHdyYXBzX2hhbmR3cmFwX2xlYXRoZXJ5X2ZhYnJpY19ibHVlX3NrdWxsc19saWdodC42ZGVkODU1NDg4NDE4NzQ1YWM3Zjg0NDk2MzI5ZDNkMGMzYmJiODI1LnBuZw--/auto/auto/85/notrim/b94a8abbd13a873953cfea94b8f03080.webp' },
+  { baseId: 'gloves_duct_tape', weapon: '★ Hand Wraps', skinName: 'Duct Tape', rarity: 'covert', cat: 'gloves',
+    priceUSD: 450, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL2xlYXRoZXJfaGFuZHdyYXBzX2hhbmR3cmFwX2xlYXRoZXJ5X2R1Y3R0YXBlX2xpZ2h0LmE4Yjc2YjQyMjhkYzNjODA0ZDJlMmE0MWE3OTIzZThlMGJkMDVlODAucG5n/auto/auto/85/notrim/96d5d49c87c6e5e23f0f3a7b9d56d2a8.webp' },
+  { baseId: 'gloves_big_game', weapon: '★ Sport Gloves', skinName: 'Big Game', rarity: 'covert', cat: 'gloves',
+    priceUSD: 500, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3Nwb3J0eV9nbG92ZXNfc3BvcnR5X2h1bnRlcl9saWdodC5lMWFjMzY5NGI1MDE2NTYzMDEzYTQxMzliOGZkZjUxNjRhYWUyOWI5LnBuZw--/auto/auto/85/notrim/b6e48b3888cd37f51826c0d586e6221f.webp' },
+  { baseId: 'gloves_lime_polycam', weapon: '★ Specialist Gloves', skinName: 'Lime Polycam', rarity: 'covert', cat: 'gloves',
+    priceUSD: 400, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3NwZWNpYWxpc3RfZ2xvdmVzX2dsb3ZlX3NwZWNpYWxpc3RfYWJzdHJhY3RfZ3JlZW5fbGlnaHQuYjliOWNiNzIyYzNhNjc0M2FiN2IxNmVmZTg4ZWUxMGQyNGUxZDAxZC5wbmc-/auto/auto/85/notrim/f267414e049e9b1b16062123c6a8d88c.webp' },
+
+  /* ================= СТИКЕРЫ (1/3) ================= */
+  { baseId: 'sticker_ibuypower_holo_katowice2014', weapon: 'Sticker', skinName: 'iBUYPOWER (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 69820, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9pYnV5cG93ZXJfaG9sby45NWIwMzFjZDU3ZDQxN2Q1ODU5ZTMyMmY4ZGZhOTAyMzJlYWUzZGRhLnBuZw--/auto/auto/85/notrim/90d7afb1d961d6b7cdbf3d6827977689.webp' },
+  { baseId: 'sticker_crown_foil', weapon: 'Sticker', skinName: 'Crown (Foil)', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 339, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL3N0aWNrZXJzMi9jcm93bl9mb2lsLmU4ODk2NjEyNmQ1Y2ZmNmJmZDdhZDdhZWNiZmYyMWI1OGRjYmI5MWIucG5n/auto/auto/85/notrim/1a74a5398460e4d5e947c5dd6e7e1713.webp' },
+  { baseId: 'sticker_vox_holo_katowice2015', weapon: 'Sticker', skinName: 'Vox Eminor (Holo) | Katowice 2015', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 1783, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2VzbGthdG93aWNlMjAxNS92b3hlbWlub3JfaG9sby42OTVlODJiOTcxYTJlOWJlOWZkOWU2NjY4YTY3ZmNkZmIxYjYxMGY2LnBuZw--/auto/auto/85/notrim/18a977e0b546dc4feb1a2a1cf3270071.webp' },
+  { baseId: 'sticker_titan_katowice2014', weapon: 'Sticker', skinName: 'Titan | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 3500, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC90aXRhbi5jNjU5NGIxZjM1OTJlZmVjNmY1MjYxMjI4ZjllNWE5MGE0NTc2MGE2LnBuZw--/auto/auto/85/notrim/783271dc8f529aec344d1497db2fdbba.webp' },
+  { baseId: 'sticker_vox_holo_katowice2014', weapon: 'Sticker', skinName: 'Vox Eminor (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 21063, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC92b3hlbWlub3JfaG9sby5lN2I4ZGI5Y2YwZWM3NTI4MmE2NTdhZWM5ODUxMzNhZmU0OTk3MTBjLnBuZw--/auto/auto/85/notrim/3315282cec69ce7e6ebb5132b2f73de8.webp' },
+
+  { baseId: 'sticker_reason_holo_katowice2014', weapon: 'Sticker', skinName: 'Reason Gaming (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 44008, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9yZWFzb25faG9sby4zYzMwMWY1ZDUwZGVlNDEzMTlhOThiYTVkYzRjM2NkNzViZWIxMzM2LnBuZw--/auto/auto/85/notrim/5678278a5f2403512c30eb98e8dbf46e.webp' },
+  { baseId: 'sticker_dignitas_holo_katowice2014', weapon: 'Sticker', skinName: 'Team Dignitas (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 24603, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9kaWduaXRhc19ob2xvLmFhZGE2ODQzNTgwMGI0YjRjZmIyZWYyOTlhYmY3ZjgxYWM1Y2ExMjcucG5n/auto/auto/85/notrim/13a12251bc42a5ed67eda770c9fced71.webp' },
+  { baseId: 'sticker_ldlc_holo_katowice2014', weapon: 'Sticker', skinName: 'Team LDLC.com (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 17181, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9sZGxjX2hvbG8uZTE4M2YzMjVjY2E4MTlmNDNjMzA2Mjg0M2Q0ODFkYmM3YjkwZGEzMy5wbmc-/auto/auto/85/notrim/d29d62faa03a7a2f8e70a9ca0b400fe9.webp' },
+  { baseId: 'sticker_nip_holo_katowice2014', weapon: 'Sticker', skinName: 'Ninjas in Pyjamas (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 5000, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9uaW5qYXNpbnB5amFtYXNfaG9sby4zNjY3YzZiMTZlOTFlMmM0MGM5MjIxMDQ1YzY5OWZkMzMzNmVhMTk4LnBuZw--/auto/auto/85/notrim/e25c3c557902b920cb1cbf698aed97d8.webp' },
+  { baseId: 'sticker_navi_holo_katowice2014', weapon: 'Sticker', skinName: 'Natus Vincere (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 11082, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9uYXZpX2hvbG8uYjkxMzgyNTY0NDkyNGJmNjRhMDJhOTQyODg0Mzg4ZDUyMjVlMGU2MC5wbmc-/auto/auto/85/notrim/53333d053dee4fe50da532cb6708c802.webp' },
+
+  { baseId: 'sticker_hellraisers_holo_katowice2014', weapon: 'Sticker', skinName: 'HellRaisers (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 8579, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9oZWxscmFpc2Vyc19ob2xvLmJhZDY3Mjk3MGViMDUyNGNiMzE0M2FmNDZlOTk3ZDgzYjA5Nzg1ZjgucG5n/auto/auto/85/notrim/a43f22b1e7a4e710a11f44b516dd16f7.webp' },
+  { baseId: 'sticker_reason_katowice2014', weapon: 'Sticker', skinName: 'Reason Gaming | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 6472, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC9yZWFzb24uODIyZDE2NDFjMzE3MTViNDAyMTk4NzE1NGZmMzU4MDgyNzU2Njc3Ni5wbmc-/auto/auto/85/notrim/396e1aedaec3ad72c5d833d41cc5e8dd.webp' },
+  { baseId: 'sticker_bondik_gold_boston2018', weapon: 'Sticker', skinName: 'bondik (Gold) | Boston 2018', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 15000, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Jvc3RvbjIwMTgvc2lnX2JvbmRpa19nb2xkLmQyMTYzMGU4MGQ3NTU1OTEzMDljZWIxMTk3MGU3NDBhYTUwMzI0MWIucG5n/auto/auto/85/notrim/7ffb7c67720a338c2a33afa9a0faf084.webp' },
+  { baseId: 'sticker_happy_gold_boston2018', weapon: 'Sticker', skinName: 'Happy (Gold) | Boston 2018', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 14700, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Jvc3RvbjIwMTgvc2lnX2hhcHB5X2dvbGQuOTlmNmViODU5MDg1YmEzMzU4NGYwOTIyMGI1MzJmOGNhMjhkYzM4ZS5wbmc-/auto/auto/85/notrim/cc45492fb3154fe5d921cd984f93a265.webp' },
+  { baseId: 'sticker_captainmo_gold_boston2018', weapon: 'Sticker', skinName: 'captainMo (Gold) | Boston 2018', rarity: 'contraband', cat: 'sticker',
+    priceUSD: 7454, qualities: null,
+    img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Jvc3RvbjIwMTgvc2lnX2NhcHRhaW5tb19nb2xkLjIyMTZlNjU2Yjk3YjQ0YzFjZDcyYTdlODczN2NmODNhNjgxMzNhN2YucG5n/auto/auto/85/notrim/4bedd5f42cc99a15e4c1c335f8e2725e.webp' },
+    { baseId: 'sticker_titan_holo_katowice2014', weapon: 'Sticker', skinName: 'Titan (Holo) | Katowice 2014', rarity: 'contraband', cat: 'sticker',
+  priceUSD: 71425, qualities: null,
+  img: 'https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL3N0aWNrZXJzL2Vtc2thdG93aWNlMjAxNC90aXRhbl9ob2xvLmJmZWEzMDI2MzM0MjY2NmExMTUwNzllZjVlYmE1MDk0OWViM2MzMDEucG5n/auto/auto/85/notrim/73b01438ada8c83206c50a04df09f2bc.webp' }
+    
+];
+
+/* ================= ГЕНЕРАЦИЯ CATALOG (гибрид) ================= */
+const DOPPLER_PHASES = [
+  { name: 'Phase 1', mult: 1.00 },
+  { name: 'Phase 2', mult: 1.35 },
+  { name: 'Phase 3', mult: 0.95 },
+  { name: 'Phase 4', mult: 1.15 },
+  { name: 'Ruby', mult: 4.50 },
+  { name: 'Sapphire', mult: 5.20 },
+  { name: 'Black Pearl', mult: 7.80 }
+];
+const GAMMA_DOPPLER_PHASES = [
+  { name: 'Phase 1', mult: 1.00 },
+  { name: 'Phase 2', mult: 1.40 },
+  { name: 'Phase 3', mult: 0.95 },
+  { name: 'Phase 4', mult: 1.20 },
+  { name: 'Emerald', mult: 8.50 }
+];
+
+const CATALOG = [];
+let _nextId = 1;
+
+BASE_CATALOG.forEach(base => {
+  const basePrice = Math.floor(base.priceUSD * USD_RATE);
+  // Качества
+  const qualities = base.qualities === null ? [null] : (base.qualities || QUALITY_LIST);
+  qualities.forEach(q => {
+    const mult = q ? (QUALITY_MULT[q] || 1) : 1;
+    const price = Math.floor(basePrice * mult);
+    const label = q ? ` (${q})` : '';
+    CATALOG.push({
+      id: _nextId++,
+      name: `${base.weapon} | ${base.skinName}${label}`,
+      weapon: base.weapon,
+      skinName: base.skinName,
+      quality: q,
+      price: price,
+      rarity: base.rarity,
+      cat: base.cat,
+      img: base.img
+    });
+    // StatTrak™ версия (если указано)
+    if (base.statTrak && q === null) {
+      CATALOG.push({
+        id: _nextId++,
+        name: `StatTrak™ ${base.weapon} | ${base.skinName}`,
+        weapon: `StatTrak™ ${base.weapon}`,
+        skinName: base.skinName,
+        quality: null,
+        price: Math.floor(price * ST_MULT),
+        rarity: base.rarity,
+        cat: 'stattrak',
+        img: base.img
+      });
+    }
+  });
+  // Фазы Doppler
+  if (base.phases === 'doppler') {
+    DOPPLER_PHASES.forEach(phase => {
+      CATALOG.push({
+        id: _nextId++,
+        name: `${base.weapon} | ${base.skinName} (${phase.name})`,
+        weapon: base.weapon,
+        skinName: `${base.skinName} ${phase.name}`,
+        quality: null,
+        price: Math.floor(basePrice * phase.mult),
+        rarity: base.rarity,
+        cat: base.cat,
+        img: base.img
+      });
+      CATALOG.push({
+        id: _nextId++,
+        name: `StatTrak™ ${base.weapon} | ${base.skinName} (${phase.name})`,
+        weapon: `StatTrak™ ${base.weapon}`,
+        skinName: `${base.skinName} ${phase.name}`,
+        quality: null,
+        price: Math.floor(basePrice * phase.mult * ST_MULT),
+        rarity: base.rarity,
+        cat: 'stattrak',
+        img: base.img
+      });
+    });
+  }
+});
+
+/* ================= СОСТОЯНИЕ ================= */
+let state = {
+  accountId: null, name: 'Player', balance: 10000,
+  inventory: [], protected: [],
+  upgrades: 0, wins: 0, bestDrop: null,
+  invFilter: 'all', shopFilter: 'all', wishFilter: 'all',
+  invSearch: { from: 0, to: 0 }, shopSearch: { from: 0, to: 0 }, wishSearch: { from: 0, to: 0 },
+  betIndex: null, targetId: null, usedPromos: [],
+  betBalance: 0,
+  chanceBoost: 1.00,
+  contractSlots: [null, null, null, null, null],
+  contractLocked: false,
+  lastCaseOpen: 0,
+  clickerTotal: 0
+};
+
+let cart = {};
+
+function save() {
+  localStorage.setItem('upgrader_state', JSON.stringify(state));
+  saveToServer();  // ← на сервер
+}
+function load() {
+  const s = localStorage.getItem('upgrader_state');
+  if (s) { try { state = { ...state, ...JSON.parse(s) }; } catch(e) {} }
+  const c = localStorage.getItem('upgrader_cart');
+  if (c) { try { cart = JSON.parse(c); } catch(e) { cart = {}; } }
+  if (!state.contractSlots) state.contractSlots = [null, null, null, null, null];
+  if (!state.lastCaseOpen) state.lastCaseOpen = 0;
+  if (!state.clickerTotal) state.clickerTotal = 0;
+}
+function saveCart() { localStorage.setItem('upgrader_cart', JSON.stringify(cart)); }
+
+const fmt = n => Math.floor(n).toLocaleString('ru-RU').replace(/,/g, ' ');
+const byId = id => CATALOG.find(x => x.id === id);
+const RARITY_CLASS = { covert: 'covert', classified: 'classified', restricted: 'restricted', milspec: 'milspec', contraband: 'contraband', industrial: 'milspec' };
+
+function updateTopBalance() {
+  const el = document.getElementById('balanceTop');
+  if (el) el.textContent = fmt(state.balance);
+}
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('hide');
+    setTimeout(() => toast.remove(), 300);
+  }, 2000);
+}
+
+function applyFilters(list, filter, search) {
+  let result = list;
+  if (filter !== 'all') result = result.filter(x => x.cat === filter);
+  if (search.from > 0) result = result.filter(x => x.price >= search.from);
+  if (search.to > 0) result = result.filter(x => x.price <= search.to);
+  result = [...result].sort((a, b) => a.price - b.price);
+  return result;
+}
+
+function skinCardHTML(item, opts = {}) {
+  const classes = ['skin-card-3', RARITY_CLASS[item.rarity] || 'covert'];
+  if (opts.selected) classes.push('selected');
+  const actions = opts.actions || '';
+  const qtyControls = opts.qtyControls || '';
+  const labelClass = item.cat === 'stattrak' ? 'stattrak-label' : 'fn-label';
+  const labelText = item.cat === 'stattrak' ? 'ST™' : (item.quality || '');
+  const imgTag = item.img
+    ? `<img src="${item.img}" alt="${item.name}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'font-size:2rem;opacity:0.2;\\'>🎯</div>';">`
+    : `<div style="font-size:2rem;opacity:0.2;">🎯</div>`;
+  return `
+    <div class="${classes.join(' ')}" data-id="${item.id}">
+      <div class="price-top">
+        <div class="price-value"><span class="coin"></span>${fmt(item.price)}</div>
+        <div class="${labelClass}">${labelText}</div>
+      </div>
+      <div class="img-wrap">${imgTag}</div>
+      <div class="weapon-name">${item.weapon}</div>
+      <div class="skin-name">${item.skinName}</div>
+      ${qtyControls}
+      ${actions}
+    </div>`;
+}
+</script>
+<script>
+/* ================= РЕНДЕР МАГАЗИНА ================= */
+function renderShop() {
+  const grid = document.getElementById('shopGrid');
+  if (!grid) return;
+  const list = applyFilters(CATALOG, state.shopFilter, state.shopSearch);
+  if (list.length === 0) { grid.innerHTML = '<div class="empty"><b>Ничего не найдено</b>Измените фильтры</div>'; return; }
+  grid.innerHTML = list.map(item => {
+    const qty = cart[item.id] || 0;
+    const qtyControls = `
+      <div class="qty-controls" onclick="event.stopPropagation();">
+        <button class="qty-btn minus" data-minus="${item.id}">−</button>
+        <span class="qty-display">${qty}</span>
+        <button class="qty-btn" data-plus="${item.id}">+</button>
+      </div>`;
+    return skinCardHTML(item, { qtyControls });
+  }).join('');
+  grid.querySelectorAll('.skin-card-3').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      buySkin(parseInt(card.dataset.id));
+    });
+  });
+  grid.querySelectorAll('[data-plus]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); addToCart(parseInt(btn.dataset.plus)); });
+  });
+  grid.querySelectorAll('[data-minus]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); removeFromCart(parseInt(btn.dataset.minus)); });
+  });
+}
+
+/* ================= РЕНДЕР ЖЕЛАЕМЫХ ================= */
+function renderWish() {
+  const grid = document.getElementById('wishGrid');
+  if (!grid) return;
+  const list = applyFilters(CATALOG, state.wishFilter, state.wishSearch);
+  if (list.length === 0) { grid.innerHTML = '<div class="empty"><b>Ничего не найдено</b>Измените фильтры</div>'; return; }
+  grid.innerHTML = list.map(item => skinCardHTML(item, { selected: state.targetId === item.id })).join('');
+
+  // ✅ НОВОЕ: Клик по скину делает его целью
+  grid.querySelectorAll('.skin-card-3').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = parseInt(card.dataset.id);
+      if (state.targetId === id) {
+        state.targetId = null;
+        showToast('Цель сброшена', 'info');
+      } else {
+        state.targetId = id;
+        const skin = byId(id);
+        if (skin) showToast('🎯 Цель: ' + skin.weapon + ' | ' + skin.skinName, 'success');
+      }
+      save();
+      renderWish();
+      renderBetCards();
+      updateChance();
+    });
+  });
+}
+
+/* ================= РЕНДЕР ИНВЕНТАРЯ ================= */
+function renderInventory() {
+  const grid = document.getElementById('inventoryGrid');
+  if (!grid) return;
+  let list = state.inventory.map((item, index) => ({ item, index, skin: byId(item.id) }));
+  if (state.invFilter !== 'all') list = list.filter(x => x.skin && x.skin.cat === state.invFilter);
+  if (state.invSearch.from > 0) list = list.filter(x => x.skin && x.skin.price >= state.invSearch.from);
+  if (state.invSearch.to > 0) list = list.filter(x => x.skin && x.skin.price <= state.invSearch.to);
+  if (list.length === 0) { grid.innerHTML = '<div class="empty"><b>Инвентарь пуст</b>Купите скины в магазине</div>'; return; }
+  grid.innerHTML = list.map(({ item, index, skin }) => {
+    if (!skin) return '';
+    const isProtected = state.protected.includes(index);
+    const isSelected = state.betIndex === index;
+    const actions = `
+      <div class="inv-actions">
+        <button class="inv-btn star ${isProtected ? 'active' : ''}" data-star="${index}">
+          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        </button>
+        <button class="inv-btn sell" data-sell="${index}">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.93.66 1.73 1.66 1.98 1.03.26 2.24.06 2.24-1.13 0-1.03-1.03-1.36-2.5-1.75-1.71-.44-3.14-1.16-3.14-3.02 0-1.79 1.43-2.87 3.14-3.21V5h2.67v1.95c1.79.36 3.13 1.55 3.24 3.34h-1.98c-.08-1.14-.98-1.76-2-1.9-1.3-.18-2.1.45-2.1 1.23 0 .98 1.02 1.26 2.55 1.67 1.74.46 3.09 1.18 3.09 3.04 0 1.95-1.56 2.97-3.29 3.26z"/></svg>
+        </button>
+      </div>`;
+    return skinCardHTML(skin, { selected: isSelected, actions: actions })
+      .replace(`data-id="${skin.id}"`, `data-id="${skin.id}" data-index="${index}"`);
+  }).join('');
+  grid.querySelectorAll('[data-star]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.star);
+      const pos = state.protected.indexOf(index);
+      if (pos > -1) state.protected.splice(pos, 1);
+      else state.protected.push(index);
+      save(); renderInventory(); updateProfileStats(); renderProfileInventory();
+    });
+  });
+  grid.querySelectorAll('[data-sell]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.sell);
+      if (state.protected.includes(index)) { showToast('⭐ Этот скин защищён', 'info'); return; }
+      sellSkin(index);
+    });
+  });
+  grid.querySelectorAll('.skin-card-3').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      const index = parseInt(card.dataset.index);
+      if (isNaN(index)) return;
+      if (state.protected.includes(index)) { showToast('⭐ Этот скин защищён', 'info'); return; }
+      selectBet(index);
+    });
+  });
+}
+
+/* ================= КОРЗИНА ================= */
+function addToCart(id) { if (!cart[id]) cart[id] = 0; cart[id]++; saveCart(); updateCartBadge(); renderShop(); }
+function removeFromCart(id) { if (!cart[id]) return; cart[id]--; if (cart[id] <= 0) delete cart[id]; saveCart(); updateCartBadge(); renderShop(); }
+function getCartItemsCount() { return Object.values(cart).reduce((sum, q) => sum + q, 0); }
+function getCartTotalPrice() { let total = 0; Object.keys(cart).forEach(id => { const item = byId(parseInt(id)); if (item) total += item.price * cart[id]; }); return total; }
+function updateCartBadge() { const badge = document.getElementById('cartBadge'); if (badge) badge.textContent = getCartItemsCount(); }
+function openCartModal() {
+  const list = document.getElementById('cartList');
+  const totalEl = document.getElementById('cartTotal');
+  const items = Object.keys(cart);
+  if (items.length === 0) { list.innerHTML = '<div class="cart-empty">Корзина пуста</div>'; totalEl.textContent = '0 ₽'; document.getElementById('cartModal').classList.add('show'); return; }
+  let total = 0;
+  list.innerHTML = items.map(id => {
+    const item = byId(parseInt(id));
+    if (!item) return '';
+    const qty = cart[id]; const sum = item.price * qty; total += sum;
+    const imgTag = item.img ? `<img src="${item.img}" alt="" onerror="this.style.display='none';">` : `<div style="font-size:1.2rem;opacity:0.3;">🎯</div>`;
+    return `<div class="cart-row"><div class="cart-img">${imgTag}</div><div class="cart-info"><div class="cart-name">${item.weapon} | ${item.skinName}</div><div class="cart-price">${fmt(item.price)} ₽ за шт</div></div><div class="cart-qty">×${qty}</div></div>`;
+  }).join('');
+  totalEl.textContent = fmt(total) + ' ₽';
+  document.getElementById('cartModal').classList.add('show');
+}
+function closeCartModal() { document.getElementById('cartModal').classList.remove('show'); }
+function clearCart() {
+  if (Object.keys(cart).length === 0) { closeCartModal(); return; }
+  cart = {}; saveCart(); updateCartBadge(); renderShop(); closeCartModal();
+  showToast('Корзина очищена', 'info');
+}
+function buyAllFromCart() {
+  const items = Object.keys(cart);
+  if (items.length === 0) { showToast('Корзина пуста', 'error'); return; }
+  const total = getCartTotalPrice();
+  if (state.balance < total) { showToast('❌ Недостаточно средств! Нужно: ' + fmt(total) + ' ₽', 'error'); return; }
+  state.balance -= total;
+  items.forEach(id => {
+    const item = byId(parseInt(id));
+    if (!item) return;
+    for (let i = 0; i < cart[id]; i++) state.inventory.push({ id: item.id, price: item.price, chance: 100 });
+  });
+  cart = {}; saveCart(); save();
+  updateTopBalance(); updateCartBadge(); renderShop(); renderInventory();
+  updateProfileStats(); renderProfileInventory(); closeCartModal();
+  showToast('✅ Куплено на ' + fmt(total) + ' ₽', 'success');
+}
+</script>
+<script>
+/* ================= КАРТОЧКИ СТАВОК ================= */
+function renderBetCards() {
+  const left = document.getElementById('betPreviewLeft');
+  const right = document.getElementById('betPreviewRight');
+  const leftCard = document.getElementById('betCardLeft');
+  const rightCard = document.getElementById('betCardRight');
+  if (state.betIndex === null || !state.inventory[state.betIndex]) {
+    if (state.betBalance > 0) {
+      left.innerHTML = `<div style="font-size:2.5rem;margin-bottom:8px;">💰</div><div class="skin-name" style="color:#f5c518;">Баланс</div><div class="skin-price">${fmt(state.betBalance)} ₽</div>`;
+      leftCard.classList.add('filled');
+    } else {
+      left.innerHTML = `<div class="placeholder-logo"><svg viewBox="0 0 40 40"><path d="M20 6 L32 18 L26 24 L20 18 L14 24 L8 18 Z" fill="#f5c518"/><path d="M20 16 L32 28 L26 34 L20 28 L14 34 L8 28 Z" fill="#d4a017"/></svg></div>`;
+      leftCard.classList.remove('filled');
+    }
+  } else {
+    const item = state.inventory[state.betIndex];
+    const skin = byId(item.id);
+    if (skin) {
+      const imgTag = skin.img ? `<img src="${skin.img}" class="skin-img" alt="" onerror="this.style.display='none';">` : `<div style="font-size:2rem;opacity:0.3;">🎯</div>`;
+      left.innerHTML = `${imgTag}<div class="skin-name">${skin.weapon} | ${skin.skinName}</div><div class="skin-price">${fmt(skin.price)} ₽</div>`;
+      leftCard.classList.add('filled');
+    }
+  }
+  if (!state.targetId) {
+    right.innerHTML = `<div class="placeholder-logo"><svg viewBox="0 0 40 40"><path d="M20 6 L32 18 L26 24 L20 18 L14 24 L8 18 Z" fill="#f5c518"/><path d="M20 16 L32 28 L26 34 L20 28 L14 34 L8 28 Z" fill="#d4a017"/></svg></div>`;
+    rightCard.classList.remove('filled');
+  } else {
+    const skin = byId(state.targetId);
+    if (skin) {
+      const imgTag = skin.img ? `<img src="${skin.img}" class="skin-img" alt="" onerror="this.style.display='none';">` : `<div style="font-size:2rem;opacity:0.3;">🎯</div>`;
+      right.innerHTML = `${imgTag}<div class="skin-name">${skin.weapon} | ${skin.skinName}</div><div class="skin-price">${fmt(skin.price)} ₽</div>`;
+      rightCard.classList.add('filled');
+    }
+  }
+}
+
+/* ================= ДУГА ================= */
+function renderArc(chance) {
+  const fillPaths = document.querySelectorAll('.arc-fill-path');
+  if (!fillPaths.length) return;
+  if (chance <= 0) { fillPaths.forEach(p => p.setAttribute('d', '')); return; }
+  const r = 46, cx = 50, cy = 50;
+  const fillAngle = (Math.min(chance, 100) / 100) * 180;
+  const fillRad = fillAngle * Math.PI / 180;
+  const sinA = Math.sin(fillRad), cosA = Math.cos(fillRad);
+  const rx = cx + r * sinA, ry = cy + r * cosA;
+  const lx = cx - r * sinA, ly = ry;
+  const laf = fillAngle > 180 ? 1 : 0;
+  fillPaths[0].setAttribute('d', `M ${cx} ${cy + r} A ${r} ${r} 0 ${laf} 0 ${rx} ${ry}`);
+  if (fillPaths[1]) fillPaths[1].setAttribute('d', `M ${cx} ${cy + r} A ${r} ${r} 0 ${laf} 1 ${lx} ${ly}`);
+}
+
+/* ================= ШАНС ================= */
+function updateChance() {
+  const pctEl = document.getElementById('pctValue');
+  const btn = document.getElementById('upgradeBtn');
+  const btnText = document.getElementById('upgradeBtnText');
+  const hasBet = state.betIndex !== null && state.inventory[state.betIndex];
+  const hasBalance = state.betBalance > 0;
+  const hasTarget = state.targetId !== null;
+  if ((!hasBet && !hasBalance) || !hasTarget) { pctEl.textContent = '0%'; btn.disabled = true; btnText.textContent = 'Прокачать'; renderArc(0); return; }
+  const target = byId(state.targetId);
+  if (!target) return;
+  let betValue = state.betBalance;
+  if (hasBet) { const betSkin = byId(state.inventory[state.betIndex].id); if (betSkin) betValue += betSkin.price; }
+  if (betValue >= target.price) { pctEl.textContent = '0%'; btn.disabled = true; btnText.textContent = 'Ставка должна быть меньше цели'; renderArc(0); return; }
+  let chance = (betValue / target.price) * 100;
+  chance = chance * (state.chanceBoost || 1);
+  chance = Math.min(chance, 90);
+  pctEl.textContent = chance.toFixed(1) + '%';
+  btn.disabled = false;
+  btnText.textContent = `Прокачать (${chance.toFixed(1)}%)`;
+  renderArc(chance);
+}
+
+/* ================= ПРОФИЛЬ ================= */
+function updateProfileStats() {
+  const b = document.getElementById('profBalance');
+  const s = document.getElementById('profSkinsCount');
+  const u = document.getElementById('profUpgradesCount');
+  const w = document.getElementById('profWinrate');
+  if (b) b.textContent = fmt(state.balance) + ' ₽';
+  if (s) s.textContent = state.inventory.length;
+  if (u) u.textContent = state.upgrades;
+  if (w) w.textContent = state.upgrades ? Math.round((state.wins / state.upgrades) * 100) + '%' : '0%';
+}
+
+function renderProfileInventory() {
+  const grid = document.getElementById('profileInvGrid');
+  if (!grid) return;
+  if (state.inventory.length === 0) { grid.innerHTML = '<div class="empty" style="grid-column:1/-1;font-size:0.8rem;">Инвентарь пуст</div>'; return; }
+  grid.innerHTML = state.inventory.map((item, index) => {
+    const skin = byId(item.id);
+    if (!skin) return '';
+    const isProtected = state.protected.includes(index);
+    const imgTag = skin.img ? `<img src="${skin.img}" alt="" onerror="this.style.display='none';">` : `<div style="font-size:1.5rem;opacity:0.3;">🎯</div>`;
+    return `<div class="profile-inv-item ${RARITY_CLASS[skin.rarity]}"><div class="inv-img">${imgTag}</div><div class="inv-name">${skin.weapon} | ${skin.skinName}</div><div class="inv-actions"><button class="inv-btn star ${isProtected ? 'active' : ''}" data-pstar="${index}"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button><button class="inv-btn sell" data-psell="${index}"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.93.66 1.73 1.66 1.98 1.03.26 2.24.06 2.24-1.13 0-1.03-1.03-1.36-2.5-1.75-1.71-.44-3.14-1.16-3.14-3.02 0-1.79 1.43-2.87 3.14-3.21V5h2.67v1.95c1.79.36 3.13 1.55 3.24 3.34h-1.98c-.08-1.14-.98-1.76-2-1.9-1.3-.18-2.1.45-2.1 1.23 0 .98 1.02 1.26 2.55 1.67 1.74.46 3.09 1.18 3.09 3.04 0 1.95-1.56 2.97-3.29 3.26z"/></svg></button></div></div>`;
+  }).join('');
+  grid.querySelectorAll('[data-pstar]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.pstar);
+      const pos = state.protected.indexOf(index);
+      if (pos > -1) state.protected.splice(pos, 1); else state.protected.push(index);
+      save(); renderInventory(); updateProfileStats(); renderProfileInventory();
+    });
+  });
+  grid.querySelectorAll('[data-psell]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.psell);
+      if (state.protected.includes(index)) { showToast('⭐ Скин защищён', 'info'); return; }
+      sellSkin(index);
+    });
+  });
+}
+
+function renderBestDrop() {
+  const img = document.getElementById('bestDropImg');
+  const name = document.getElementById('bestDropName');
+  const meta = document.getElementById('bestDropMeta');
+  if (!img) return;
+  if (state.bestDrop) {
+    const skin = byId(state.bestDrop.id);
+    if (skin) {
+      img.classList.remove('empty');
+      img.innerHTML = skin.img ? `<img src="${skin.img}" alt="">` : '<div style="font-size:2rem;">🎯</div>';
+      name.textContent = skin.weapon + ' | ' + skin.skinName;
+      meta.innerHTML = `${fmt(skin.price)} ₽ · <span>выпал при ${state.bestDrop.chance.toFixed(1)}%</span>`;
+      return;
+    }
+  }
+  img.classList.add('empty'); img.textContent = 'Пока нет дропа';
+  name.textContent = '—'; meta.textContent = '—';
+}
+
+/* ================= ПОКУПКА / ПРОДАЖА / ВЫБОР ================= */
+function buySkin(id) {
+  const item = byId(id);
+  if (!item) return;
+  if (state.balance < item.price) { showToast('❌ Недостаточно средств! Нужно: ' + fmt(item.price) + ' ₽', 'error'); return; }
+  state.balance -= item.price;
+  state.inventory.push({ id: id, price: item.price, chance: 100 });
+  save(); updateTopBalance(); renderInventory(); updateProfileStats(); renderProfileInventory();
+  showToast('✅ Куплено: ' + item.name, 'success');
+}
+
+function sellSkin(index) {
+  if (state.protected.includes(index)) { showToast('⭐ Скин защищён', 'info'); return; }
+  const item = state.inventory[index];
+  if (!item) return;
+  const skin = byId(item.id);
+  if (!skin) return;
+  state.balance += skin.price;
+  state.inventory.splice(index, 1);
+  state.protected = state.protected.filter(i => i !== index).map(i => i > index ? i - 1 : i);
+  if (state.betIndex === index) state.betIndex = null;
+  else if (state.betIndex > index) state.betIndex--;
+  save(); updateTopBalance(); renderInventory(); updateProfileStats(); renderProfileInventory();
+  renderBetCards(); updateChance();
+  showToast('✅ Продано: ' + skin.name, 'success');
+}
+
+function selectBet(index) {
+  state.betIndex = (state.betIndex === index) ? null : index;
+  save(); renderInventory(); renderBetCards(); updateChance();
+}
+</script>
+<script>
+/* ================= КОНТРАКТ: отрисовка слотов ================= */
+function renderContractSlots() {
+  const slots = document.querySelectorAll('.contract-slot');
+  if (!slots.length) return;
+  slots.forEach((slot, i) => {
+    const item = state.contractSlots[i];
+    if (item) {
+      const skin = byId(item.id);
+      if (skin) {
+        const imgTag = skin.img ? `<img src="${skin.img}" class="slot-img" alt="" onerror="this.style.display='none';">` : `<div style="font-size:1.5rem;opacity:0.3;">🎯</div>`;
+        slot.innerHTML = `${imgTag}<div class="slot-price">${fmt(skin.price)}</div><button class="slot-remove" data-remove="${i}">×</button>`;
+        slot.classList.add('filled');
+        if (state.contractLocked) slot.classList.add('locked');
+      }
+    } else {
+      slot.innerHTML = '<span class="slot-plus">+</span>';
+      slot.classList.remove('filled', 'locked');
+    }
+  });
+
+  let total = 0, count = 0;
+  state.contractSlots.forEach(s => {
+    if (s) {
+      const skin = byId(s.id);
+      if (skin) { total += skin.price; count++; }
+    }
+  });
+  const totalEl = document.getElementById('contractTotal');
+  const countEl = document.getElementById('contractCount');
+  const btn = document.getElementById('contractBtn');
+  if (totalEl) totalEl.textContent = fmt(total) + ' ₽';
+  if (countEl) countEl.textContent = count + ' / 5';
+  if (btn) btn.disabled = count !== 5 || state.contractLocked;
+
+  slots.forEach(slot => {
+    slot.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (state.contractLocked) { showToast('🔒 Контракт запущен', 'info'); return; }
+        const i = parseInt(btn.dataset.remove);
+        state.contractSlots[i] = null;
+        save();
+        renderContractSlots();
+      });
+    });
+  });
+}
+
+/* ================= КОНТРАКТ: клик по слоту ================= */
+document.querySelectorAll('.contract-slot').forEach(slot => {
+  slot.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    if (state.contractLocked) { showToast('🔒 Контракт запущен', 'info'); return; }
+    const slotIndex = parseInt(slot.dataset.slot);
+    if (state.contractSlots[slotIndex]) return;
+    openContractPickModal(slotIndex);
+  });
+});
+
+/* ================= КОНТРАКТ: модалка выбора ================= */
+function openContractPickModal(slotIndex) {
+  const modal = document.getElementById('contractPickModal');
+  const listEl = document.getElementById('contractPickList');
+  if (!modal || !listEl) return;
+
+  const usedIndexes = state.contractSlots.filter(s => s !== null).map(s => s.invIndex);
+  const available = state.inventory.map((item, index) => ({ item, index, skin: byId(item.id) })).filter(x => x.skin && !usedIndexes.includes(x.index));
+
+  if (available.length === 0) {
+    listEl.innerHTML = '<div class="empty" style="grid-column:1/-1;padding:20px;">Нет доступных скинов</div>';
+    modal.classList.add('show');
+    return;
+  }
+
+  listEl.innerHTML = available.map(({ item, index, skin }) => {
+    const imgTag = skin.img ? `<img src="${skin.img}" alt="" onerror="this.style.display='none';">` : `<div style="font-size:1.5rem;opacity:0.3;">🎯</div>`;
+    return `<div class="contract-pick-item" data-index="${index}">${imgTag}<div class="pick-name">${skin.weapon} | ${skin.skinName}</div><div class="pick-price">${fmt(skin.price)} ₽</div></div>`;
+  }).join('');
+
+  listEl.querySelectorAll('.contract-pick-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const invIndex = parseInt(el.dataset.index);
+      const item = state.inventory[invIndex];
+      if (!item) return;
+      state.contractSlots[slotIndex] = { id: item.id, invIndex: invIndex };
+      save();
+      renderContractSlots();
+      modal.classList.remove('show');
+    });
+  });
+  modal.classList.add('show');
+}
+
+document.getElementById('contractPickClose').addEventListener('click', () => {
+  document.getElementById('contractPickModal').classList.remove('show');
+});
+document.getElementById('contractPickModal').addEventListener('click', e => {
+  if (e.target.id === 'contractPickModal') e.currentTarget.classList.remove('show');
+});
+
+/* ================= КОНТРАКТ: запуск ================= */
+document.getElementById('contractBtn').addEventListener('click', () => {
+  const filled = state.contractSlots.filter(s => s !== null);
+  if (filled.length !== 5) { showToast('Нужно ровно 5 скинов', 'error'); return; }
+  if (state.contractLocked) { showToast('🔒 Уже запущен', 'info'); return; }
+
+  let total = 0;
+  filled.forEach(s => {
+    const skin = byId(s.id);
+    if (skin) total += skin.price;
+  });
+
+  state.contractLocked = true;
+  save();
+  renderContractSlots();
+  document.body.style.pointerEvents = 'none';
+
+  // 60% — 0.45–1.1 | 20% — 1.2–1.7 | 10% — 1.8–3.5 | 10% — 0.2–0.45
+  const roll = Math.random();
+  let mult;
+  if (roll < 0.60) mult = 0.45 + Math.random() * (1.1 - 0.45);
+  else if (roll < 0.80) mult = 1.2 + Math.random() * (1.7 - 1.2);
+  else if (roll < 0.90) mult = 1.8 + Math.random() * (3.5 - 1.8);
+  else mult = 0.2 + Math.random() * (0.45 - 0.2);
+  const prize = Math.floor(total * mult);
+
+  setTimeout(() => {
+    const toRemove = filled.map(s => s.invIndex).sort((a, b) => b - a);
+    toRemove.forEach(idx => {
+      state.inventory.splice(idx, 1);
+      state.protected = state.protected.filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
+      if (state.betIndex === idx) state.betIndex = null;
+      else if (state.betIndex > idx) state.betIndex--;
+    });
+
+    const tolerance = Math.max(prize * 0.15, 500);
+    const candidates = CATALOG.filter(x => Math.abs(x.price - prize) <= tolerance);
+    let giveSkin = null;
+    if (candidates.length > 0) giveSkin = candidates[Math.floor(Math.random() * candidates.length)];
+
+    if (giveSkin) state.inventory.push({ id: giveSkin.id, price: giveSkin.price, chance: 100, fromContract: true });
+    else state.balance += prize;
+
+    state.upgrades++;
+    state.contractSlots = [null, null, null, null, null];
+    state.contractLocked = false;
+    save();
+
+    document.body.style.pointerEvents = '';
+    showContractResult(mult, prize, giveSkin, total);
+    updateTopBalance();
+    renderInventory();
+    renderContractSlots();
+    updateProfileStats();
+    renderProfileInventory();
+  }, 1500);
+});
+
+/* ================= КОНТРАКТ: модалка результата ================= */
+function showContractResult(mult, prize, skin, betTotal) {
+  const win = mult >= 1.0;
+  playContractResult(win);
+
+  let modal = document.getElementById('contractResultModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'contractResultModal';
+    modal.className = 'input-modal';
+    modal.innerHTML = '<div class="input-box" style="max-width:400px;"><div id="contractResultContent"></div></div>';
+    document.body.appendChild(modal);
+  }
+
+  const content = document.getElementById('contractResultContent');
+  let prizeHTML = '';
+  if (skin) {
+    const imgTag = skin.img ? `<img src="${skin.img}" alt="" style="max-width:140px;max-height:90px;object-fit:contain;">` : '<div style="font-size:3rem;">🎯</div>';
+    prizeHTML = `<div class="result-prize">${imgTag}<div class="prize-name">${skin.weapon} | ${skin.skinName}</div><div class="prize-value">${fmt(skin.price)} ₽</div></div>`;
+  } else {
+    prizeHTML = `<div class="result-prize"><div style="font-size:3rem;margin-bottom:8px;">💰</div><div class="prize-name">Деньги на баланс</div><div class="prize-value">+${fmt(prize)} ₽</div></div>`;
+  }
+
+  content.innerHTML = `
+    <div class="contract-result">
+      <div class="result-mult ${win ? 'win' : 'lose'}">×${mult.toFixed(2)}</div>
+      <div class="result-label">${win ? '🎉 ВЫИГРЫШ' : '💀 ПРОИГРЫШ'}</div>
+      ${prizeHTML}
+      <div style="font-size:0.75rem;color:#7a7a85;margin-bottom:14px;">Ставка: ${fmt(betTotal)} ₽</div>
+      <button class="input-btn confirm" id="contractResultClose" style="width:100%;padding:14px;">OK</button>
+    </div>
+  `;
+
+  modal.classList.add('show');
+  document.getElementById('contractResultClose').addEventListener('click', () => {
+    modal.classList.remove('show');
+  });
+  modal.addEventListener('click', e => {
+    if (e.target.id === 'contractResultModal') modal.classList.remove('show');
+  });
+}
+</script>
+<script>
+/* ================= КЕЙС ================= */
+const CASE_COOLDOWN = 24 * 60 * 60 * 1000;
+const CASE_MIN = 10000;
+const CASE_MAX = 50000;
+
+function getCaseRemaining() {
+  const now = Date.now();
+  const passed = now - (state.lastCaseOpen || 0);
+  return Math.max(0, CASE_COOLDOWN - passed);
+}
+
+function formatTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${h}ч ${m}м ${s}с`;
+}
+
+function updateCaseUI() {
+  const box = document.getElementById('caseBox');
+  const btn = document.getElementById('caseBtn');
+  const btnText = document.getElementById('caseBtnText');
+  if (!box || !btn || !btnText) return;
+  const remaining = getCaseRemaining();
+  if (remaining <= 0) {
+    box.classList.remove('cooldown');
+    btn.disabled = false;
+    btnText.textContent = '🎁 Открыть кейс';
+  } else {
+    box.classList.add('cooldown');
+    btn.disabled = true;
+    btnText.textContent = '⏳ Доступно через ' + formatTime(remaining);
+  }
+}
+
+document.getElementById('caseBox').addEventListener('click', openCase);
+document.getElementById('caseBtn').addEventListener('click', openCase);
+
+/* Скины для кейса (от 10к до 50к) */
+function getCaseSkins() {
+  return CATALOG.filter(x => x.price >= CASE_MIN && x.price <= CASE_MAX && x.cat !== 'sticker');
+}
+
+function openCase() {
+  const remaining = getCaseRemaining();
+  if (remaining > 0) { showToast('⏳ Кейс доступен через ' + formatTime(remaining), 'info'); return; }
+
+  const pool = getCaseSkins();
+  if (pool.length === 0) { showToast('Нет скинов в диапазоне', 'error'); return; }
+
+  // Выбираем выигрыш
+  const winSkin = pool[Math.floor(Math.random() * pool.length)];
+
+  // Строим ленту: 40 случайных + выигрыш в позиции 34
+  const strip = document.getElementById('caseStrip');
+  const items = [];
+  for (let i = 0; i < 40; i++) {
+    if (i === 34) items.push(winSkin);
+    else items.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+
+  strip.innerHTML = items.map(it => {
+    const imgTag = it.img ? `<img src="${it.img}" alt="" onerror="this.style.display='none';">` : `<div style="font-size:1.5rem;opacity:0.3;">🎯</div>`;
+    return `<div class="case-strip-item ${RARITY_CLASS[it.rarity] || ''}">${imgTag}<div class="strip-name">${it.weapon} | ${it.skinName}</div></div>`;
+  }).join('');
+
+  // Показываем окно ленты
+  const wrap = document.getElementById('caseStripWrap');
+  wrap.classList.add('show');
+
+  // Сброс позиции
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateX(0px)';
+
+  // Стартовая позиция: смещаем ленту так, чтобы позиция 34 оказалась вне центра
+  const itemWidth = 118; // 110 + margin 8
+  const viewportWidth = document.querySelector('.case-strip-viewport').offsetWidth;
+  const targetX = -(34 * itemWidth + itemWidth / 2 - viewportWidth / 2);
+
+  // Прокрутка с замедлением (4 секунды)
+  const duration = 4000;
+  setTimeout(() => {
+    strip.style.transition = `transform ${duration}ms cubic-bezier(0.08, 0.7, 0.15, 1)`;
+    strip.style.transform = `translateX(${targetX}px)`;
+  }, 50);
+
+  // Тики во время прокрутки
+  let tickCount = 0;
+  const tickTimer = setInterval(() => {
+    playStripTick();
+    tickCount++;
+    if (tickCount > 60) clearInterval(tickTimer);
+  }, 60);
+
+  // Через 4.5 сек показываем результат
+  setTimeout(() => {
+    clearInterval(tickTimer);
+    wrap.classList.remove('show');
+
+    // Зачисляем скин
+    state.inventory.push({ id: winSkin.id, price: winSkin.price, chance: 100, fromCase: true });
+    state.lastCaseOpen = Date.now();
+    save();
+    updateTopBalance();
+    renderInventory();
+    updateProfileStats();
+    renderProfileInventory();
+    updateCaseUI();
+    playWin();
+
+    showCaseReveal({ type: 'skin', skin: winSkin });
+  }, duration + 500);
+}
+
+/* ================= ПОКАЗ ВЫИГРЫША ================= */
+function showCaseReveal(prize) {
+  const modal = document.getElementById('caseReveal');
+  const imgEl = document.getElementById('caseRevealImg');
+  const nameEl = document.getElementById('caseRevealName');
+  const priceEl = document.getElementById('caseRevealPrice');
+  if (!modal) return;
+
+  if (prize.type === 'money') {
+    imgEl.innerHTML = '<div style="font-size:4rem;filter:drop-shadow(0 0 20px rgba(245,197,24,0.8));">💰</div>';
+    nameEl.textContent = 'Деньги на баланс';
+    priceEl.textContent = '+' + fmt(prize.amount) + ' ₽';
+  } else {
+    const skin = prize.skin;
+    imgEl.innerHTML = skin.img ? `<img src="${skin.img}" alt="">` : '<div style="font-size:3rem;">🎯</div>';
+    nameEl.textContent = skin.weapon + ' | ' + skin.skinName;
+    priceEl.textContent = fmt(skin.price) + ' ₽';
+  }
+
+  modal.classList.add('show');
+}
+
+document.getElementById('caseRevealClose').addEventListener('click', () => {
+  document.getElementById('caseReveal').classList.remove('show');
+});
+document.getElementById('caseReveal').addEventListener('click', e => {
+  if (e.target.id === 'caseReveal') e.currentTarget.classList.remove('show');
+});
+
+/* ================= КЛИКЕР (0.5 ₽ за клик) ================= */
+document.getElementById('clickerBtn').addEventListener('click', () => {
+  state.balance += 0.5;
+  state.clickerTotal = (state.clickerTotal || 0) + 0.5;
+  updateTopBalance();
+  const totalEl = document.getElementById('clickerTotal');
+  if (totalEl) totalEl.textContent = fmt(state.clickerTotal) + ' ₽';
+  playCash();
+  save();
+});
+
+function updateClickerUI() {
+  const totalEl = document.getElementById('clickerTotal');
+  if (totalEl) totalEl.textContent = fmt(state.clickerTotal || 0) + ' ₽';
+}
+
+/* ================= ОБНОВЛЕНИЕ ТАЙМЕРА КЕЙСА ================= */
+setInterval(() => {
+  updateCaseUI();
+}, 1000);
+
+/* ================= СТАРТ БОНУСОВ ================= */
+function initBonusUI() {
+  updateCaseUI();
+  updateClickerUI();
+}
+</script>
+<script>
+let isSpinning = false;
+let currentRotation = 0;
+let fastMode = false;
+
+/* ================= СПИН ================= */
+async function spin() {
+  if (isSpinning) return;
+  if ((state.betIndex === null && state.betBalance <= 0) || !state.targetId) return;
+
+  const targetSkin = byId(state.targetId);
+  if (!targetSkin) return;
+
+  let betSkin = null;
+  let betValue = state.betBalance;
+
+  if (state.betIndex !== null) {
+    betSkin = byId(state.inventory[state.betIndex].id);
+    if (betSkin) betValue += betSkin.price;
+  }
+
+  if (betValue >= targetSkin.price) return;
+
+  isSpinning = true;
+
+  // Заморозка — ровно до конца апгрейда, без страховки
+  document.body.style.pointerEvents = 'none';
+
+  startSpinSound();
+
+  const btn = document.getElementById('upgradeBtn');
+  const btnText = document.getElementById('upgradeBtnText');
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Крутим...';
+
+  let chance = (betValue / targetSkin.price) * 100;
+  chance = chance * (state.chanceBoost || 1);
+  chance = Math.min(chance, 90);
+
+  const duration = fastMode ? 2 : 4;
+
+  // Стрелка останавливается ровно в зоне результата, без проскока
+  const maxDist = (chance / 100) * 180;
+  let arrowAngle;
+  // Реальный шанс — «подтягиваем» низкие проценты вверх
+const realChance = Math.min(chance, 90);
+if (Math.random() < realChance / 100) {
+    arrowAngle = 180 - Math.random() * maxDist * 0.95;
+  } else {
+    arrowAngle = (180 + maxDist + Math.random() * (180 - maxDist)) % 360;
+  }
+  const distFromBottom = Math.min(Math.abs(arrowAngle - 180), 360 - Math.abs(arrowAngle - 180));
+  const win = distFromBottom <= maxDist;
+
+  const currentMod = ((currentRotation % 360) + 360) % 360;
+  let delta = (arrowAngle - currentMod + 360) % 360;
+  const extraSpins = 360 * (fastMode ? 3 : 5);
+  const newRotation = currentRotation + delta + extraSpins;
+
+  const arrow = document.getElementById('arrow');
+  if (arrow) {
+    arrow.style.transition = `transform ${duration}s cubic-bezier(0.15, 0.85, 0.25, 1)`;
+    arrow.style.transform = `translate(-50%, -50%) rotate(${newRotation}deg)`;
+  }
+  currentRotation = newRotation;
+
+  const centerResult = document.getElementById('wheelCenterResult');
+  const centerPercent = document.getElementById('wheelCenterPercent');
+  if (centerResult) {
+    centerResult.classList.remove('show', 'win', 'lose');
+    centerResult.textContent = '';
+  }
+  if (centerPercent) centerPercent.style.opacity = '1';
+  if (arrow) arrow.classList.remove('lose');
+
+  await new Promise(r => setTimeout(r, duration * 1000 + 200));
+
+  stopSpinSound();
+  if (win) playWin(); else playLose();
+
+  if (centerPercent) centerPercent.style.opacity = '0';
+  if (centerResult) {
+    if (win) {
+      centerResult.textContent = 'УДАЧНО';
+      centerResult.className = 'wheel-center-result show win';
+    } else {
+      centerResult.textContent = 'НЕ БЕДА';
+      centerResult.className = 'wheel-center-result show lose';
+      if (arrow) arrow.classList.add('lose');
+    }
+  }
+
+  const rightCard = document.getElementById('betCardRight');
+  if (rightCard) {
+    rightCard.classList.remove('win-flash', 'lose-flash');
+    void rightCard.offsetWidth;
+    rightCard.classList.add(win ? 'win-flash' : 'lose-flash');
+  }
+
+  setTimeout(() => {
+    if (centerResult) {
+      centerResult.classList.remove('show');
+      centerResult.textContent = '';
+    }
+    if (centerPercent) centerPercent.style.opacity = '1';
+    if (arrow) arrow.classList.remove('lose');
+    if (rightCard) rightCard.classList.remove('win-flash', 'lose-flash');
+
+    applyResult(win, chance, betSkin, targetSkin);
+    isSpinning = false;
+    document.body.style.pointerEvents = '';
+  }, 3500);
+}
+
+/* ================= РЕЗУЛЬТАТ АПГРЕЙДА ================= */
+function applyResult(win, chance, betSkin, targetSkin) {
+  if (state.betIndex !== null) {
+    const betIdx = state.betIndex;
+    state.inventory.splice(betIdx, 1);
+    state.protected = state.protected.filter(i => i !== betIdx).map(i => i > betIdx ? i - 1 : i);
+  }
+  if (state.betBalance > 0) {
+    state.balance -= state.betBalance;
+  }
+  state.upgrades++;
+
+  if (win) {
+    state.wins++;
+    state.inventory.push({ id: targetSkin.id, price: targetSkin.price, chance: chance, fromUpgrade: true });
+    if (!state.bestDrop || targetSkin.price > state.bestDrop.price) {
+      state.bestDrop = { id: targetSkin.id, price: targetSkin.price, chance: chance };
+    }
+  }
+
+  state.betIndex = null;
+  state.targetId = null;
+  state.betBalance = 0;
+
+  const slider = document.getElementById('balanceSlider');
+  const sliderValue = document.getElementById('balanceSliderValue');
+  if (slider) { slider.value = 0; slider.max = state.balance; }
+  if (sliderValue) sliderValue.textContent = '0 ₽';
+  document.querySelectorAll('.percent-btn').forEach(b => b.classList.remove('active'));
+
+  save();
+  updateTopBalance();
+  renderInventory();
+  renderWish();
+  renderBetCards();
+  updateChance();
+  updateProfileStats();
+  renderProfileInventory();
+  renderBestDrop();
+}
+</script>
+<script>
+/* ================= ТАБЫ АПГРЕЙДА ================= */
+document.querySelectorAll('.main-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'wish') renderWish();
+    if (tab.dataset.tab === 'mine') renderInventory();
+  });
+});
+document.querySelectorAll('.sub-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const sub = tab.dataset.sub;
+    document.getElementById('subtab-inventory').style.display = sub === 'inventory' ? 'block' : 'none';
+    document.getElementById('subtab-shop').style.display = sub === 'shop' ? 'block' : 'none';
+    if (sub === 'inventory') renderInventory();
+    if (sub === 'shop') renderShop();
+  });
+});
+
+/* ================= ФИЛЬТРЫ ================= */
+document.querySelectorAll('#invFilters .cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#invFilters .cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.invFilter = btn.dataset.filter;
+    save(); renderInventory();
+  });
+});
+document.querySelectorAll('#shopFilters .cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#shopFilters .cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.shopFilter = btn.dataset.filter;
+    save(); renderShop();
+  });
+});
+document.querySelectorAll('#wishFilters .cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#wishFilters .cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.wishFilter = btn.dataset.filter;
+    save(); renderWish();
+  });
+});
+
+/* ================= ПОИСК ================= */
+document.getElementById('invSearchBtn').addEventListener('click', () => {
+  state.invSearch.from = parseInt(document.getElementById('invSearchFrom').value) || 0;
+  state.invSearch.to = parseInt(document.getElementById('invSearchTo').value) || 0;
+  save(); renderInventory();
+});
+document.getElementById('invSearchReset').addEventListener('click', () => {
+  document.getElementById('invSearchFrom').value = '';
+  document.getElementById('invSearchTo').value = '';
+  state.invSearch = { from: 0, to: 0 };
+  save(); renderInventory();
+});
+document.getElementById('shopSearchBtn').addEventListener('click', () => {
+  state.shopSearch.from = parseInt(document.getElementById('shopSearchFrom').value) || 0;
+  state.shopSearch.to = parseInt(document.getElementById('shopSearchTo').value) || 0;
+  save(); renderShop();
+});
+document.getElementById('shopSearchReset').addEventListener('click', () => {
+  document.getElementById('shopSearchFrom').value = '';
+  document.getElementById('shopSearchTo').value = '';
+  state.shopSearch = { from: 0, to: 0 };
+  save(); renderShop();
+});
+document.getElementById('wishSearchBtn').addEventListener('click', () => {
+  state.wishSearch.from = parseInt(document.getElementById('wishSearchFrom').value) || 0;
+  state.wishSearch.to = parseInt(document.getElementById('wishSearchTo').value) || 0;
+  save(); renderWish();
+});
+document.getElementById('wishSearchReset').addEventListener('click', () => {
+  document.getElementById('wishSearchFrom').value = '';
+  document.getElementById('wishSearchTo').value = '';
+  state.wishSearch = { from: 0, to: 0 };
+  save(); renderWish();
+});
+
+/* ================= КОРЗИНА ================= */
+document.getElementById('openCartBtn').addEventListener('click', openCartModal);
+document.getElementById('cartCancelAll').addEventListener('click', clearCart);
+document.getElementById('cartBuyAll').addEventListener('click', buyAllFromCart);
+document.getElementById('cartModal').addEventListener('click', e => {
+  if (e.target.id === 'cartModal') closeCartModal();
+});
+
+/* ================= КАРТОЧКА СТАВКИ СЛЕВА ================= */
+document.getElementById('betCardLeft').addEventListener('click', () => {
+  switchScreen('upgrade');
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('.main-tab[data-tab="mine"]').classList.add('active');
+  document.getElementById('tab-mine').classList.add('active');
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.sub-tab[data-sub="inventory"]').classList.add('active');
+  document.getElementById('subtab-inventory').style.display = 'block';
+  document.getElementById('subtab-shop').style.display = 'none';
+  renderInventory();
+});
+
+/* ================= ПОЛЗУНОК ================= */
+const balanceSlider = document.getElementById('balanceSlider');
+const balanceSliderValue = document.getElementById('balanceSliderValue');
+if (balanceSlider) {
+  balanceSlider.addEventListener('input', () => {
+    state.betBalance = parseInt(balanceSlider.value) || 0;
+    if (balanceSliderValue) balanceSliderValue.textContent = fmt(state.betBalance) + ' ₽';
+    save(); renderBetCards(); updateChance();
+  });
+}
+
+/* ================= КНОПКИ ШАНСА ================= */
+document.querySelectorAll('.percent-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mult = parseFloat(btn.dataset.mult);
+    const percent = parseFloat(btn.dataset.percent);
+
+    let betValue = state.betBalance;
+    if (state.betIndex !== null && state.inventory[state.betIndex]) {
+      const betSkin = byId(state.inventory[state.betIndex].id);
+      if (betSkin) betValue += betSkin.price;
+    }
+
+    if (betValue <= 0) { showToast('Сначала поставьте скин или баланс в ставку', 'error'); return; }
+
+    let targetChance;
+    if (!isNaN(mult)) targetChance = 100 / mult;
+    else targetChance = percent;
+
+    const desiredPrice = betValue / (targetChance / 100);
+    let closest = null;
+    let minDiff = Infinity;
+    CATALOG.forEach(item => {
+      const diff = Math.abs(item.price - desiredPrice);
+      if (diff < minDiff) { minDiff = diff; closest = item; }
+    });
+
+    if (!closest) { showToast('Не удалось подобрать цель', 'error'); return; }
+
+    state.targetId = closest.id;
+    save();
+    renderWish();
+    renderBetCards();
+    updateChance();
+
+    document.querySelectorAll('.percent-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    showToast('🎯 Цель: ' + closest.weapon + ' | ' + closest.skinName, 'success');
+  });
+});
+
+/* ================= ПРОФИЛЬ ================= */
+document.getElementById('profileBtn').addEventListener('click', () => {
+  document.getElementById('profAvatar').textContent = state.name.charAt(0).toUpperCase();
+  document.getElementById('profName').textContent = state.name;
+  document.getElementById('profId').textContent = 'ID: ' + state.accountId;
+  updateProfileStats();
+  renderBestDrop();
+  renderProfileInventory();
+  document.getElementById('profileModal').classList.add('show');
+});
+document.getElementById('profileClose').addEventListener('click', () => {
+  document.getElementById('profileModal').classList.remove('show');
+});
+document.getElementById('profileModal').addEventListener('click', e => {
+  if (e.target.id === 'profileModal') e.currentTarget.classList.remove('show');
+});
+
+const nameModal = document.getElementById('nameModal');
+document.getElementById('editNameBtn').addEventListener('click', () => {
+  document.getElementById('nameInput').value = state.name;
+  nameModal.classList.add('show');
+});
+document.getElementById('nameCancel').addEventListener('click', () => nameModal.classList.remove('show'));
+document.getElementById('nameConfirm').addEventListener('click', () => {
+  const newName = document.getElementById('nameInput').value.trim();
+  if (!newName) { showToast('Введите имя', 'error'); return; }
+  if (newName.length > 5) { showToast('Максимум 5 символов', 'error'); return; }
+  state.name = newName;
+  document.getElementById('profName').textContent = newName;
+  document.getElementById('profAvatar').textContent = newName.charAt(0).toUpperCase();
+  document.getElementById('profileBtn').textContent = newName.charAt(0).toUpperCase();
+  save();
+  nameModal.classList.remove('show');
+  showToast('✅ Имя изменено', 'success');
+});
+nameModal.addEventListener('click', e => { if (e.target.id === 'nameModal') nameModal.classList.remove('show'); });
+
+/* ================= ПРОДАТЬ ВСЁ ================= */
+document.getElementById('sellAllBtn').addEventListener('click', () => {
+  let total = 0;
+  const newInv = [];
+  const newProtected = [];
+  state.inventory.forEach((item, index) => {
+    const skin = byId(item.id);
+    if (state.protected.includes(index)) {
+      newProtected.push(newInv.length);
+      newInv.push(item);
+    } else {
+      total += skin ? skin.price : 0;
+    }
+  });
+  if (total === 0) { showToast('Нет скинов для продажи', 'error'); return; }
+  state.inventory = newInv;
+  state.protected = newProtected;
+  state.betIndex = null;
+  state.balance += total;
+  save();
+  updateTopBalance();
+  renderInventory();
+  renderProfileInventory();
+  updateProfileStats();
+  renderBetCards();
+  updateChance();
+  showToast('✅ Продано на ' + fmt(total) + ' ₽', 'success');
+});
+
+/* ================= ПРОМОКОДЫ ================= */
+const promoCodes = [
+  { code: 'UPGRADER2024', amount: 100, limit: 10000, uses: 0 },
+  { code: 'open', amount: 7500, limit: 500, uses: 0 },
+  { code: 'kilss', amount: 7000, limit: 1, uses: 0 },
+  { code: 'BONUS500', amount: 5000, limit: 0, uses: 0 },
+  { code: 'BONUS1000', amount: 1000, limit: 0, uses: 0 },
+  { code: 'BONUS5000', amount: 5000, limit: 0, uses: 0 },
+  { code: 'BONUS10000', amount: 10000, limit: 50, uses: 0 },
+  { code: 'PROMO2024', amount: 2000, limit: 0, uses: 0 },
+  { code: 'PROMO2025', amount: 2500, limit: 0, uses: 0 },
+  { code: 'CSGO2024', amount: 1500, limit: 0, uses: 0 },
+  { code: 'CS2FREE', amount: 800, limit: 0, uses: 0 },
+  { code: 'DRAGONLORE', amount: 10000, limit: 100, uses: 0 },
+  { code: 'HOWL2024', amount: 15000, limit: 50, uses: 0 },
+  { code: 'AWPDRAGON', amount: 10000, limit: 100, uses: 0 },
+  { code: 'KARAMBIT', amount: 5000, limit: 200, uses: 0 },
+  { code: 'BUTTERFLY', amount: 5000, limit: 200, uses: 0 },
+  { code: 'M4A4HOWL', amount: 12000, limit: 100, uses: 0 },
+  { code: 'AKREDLINE', amount: 1000, limit: 500, uses: 0 },
+  { code: 'DESERTEAGLE', amount: 2000, limit: 300, uses: 0 },
+  { code: 'KNIFE500', amount: 500, limit: 0, uses: 0 },
+  { code: 'STICKER100', amount: 100, limit: 0, uses: 0 },
+  { code: 'STATTRAK', amount: 3000, limit: 200, uses: 0 },
+  { code: 'VIP2024', amount: 5000, limit: 50, uses: 0 },
+  { code: 'LUCKY777', amount: 777, limit: 0, uses: 0 },
+  { code: 'LUCKY888', amount: 888, limit: 0, uses: 0 },
+  { code: 'LUCKY999', amount: 999, limit: 0, uses: 0 },
+  { code: 'START1000', amount: 1000, limit: 0, uses: 0 },
+  { code: 'NEWYEAR2025', amount: 2025, limit: 0, uses: 0 },
+  { code: 'GIVEAWAY', amount: 3000, limit: 100, uses: 0 },
+  { code: 'TWITCH', amount: 2000, limit: 100, uses: 0 },
+  { code: 'YOUTUBE', amount: 2000, limit: 100, uses: 0 },
+  { code: 'TIKTOK', amount: 1500, limit: 100, uses: 0 },
+  { code: 'INSTAGRAM', amount: 1500, limit: 100, uses: 0 },
+  { code: 'DISCORD', amount: 1000, limit: 100, uses: 0 },
+  { code: 'TELEGRAM', amount: 1000, limit: 100, uses: 0 },
+  { code: 'FACEBOOK', amount: 1000, limit: 100, uses: 0 },
+  { code: 'VK2024', amount: 1000, limit: 100, uses: 0 },
+  { code: 'REDDIT', amount: 1000, limit: 100, uses: 0 },
+  { code: 'STEAM2024', amount: 1500, limit: 0, uses: 0 },
+  { code: 'VALVE2024', amount: 2500, limit: 50, uses: 0 },
+  { code: 'SUMMER2024', amount: 1200, limit: 0, uses: 0 },
+  { code: 'WINTER2024', amount: 1200, limit: 0, uses: 0 },
+  { code: 'SPRING2024', amount: 1200, limit: 0, uses: 0 },
+  { code: 'AUTUMN2024', amount: 1200, limit: 0, uses: 0 },
+  { code: 'HALLOWEEN', amount: 1500, limit: 0, uses: 0 },
+  { code: 'CHRISTMAS', amount: 1500, limit: 0, uses: 0 },
+  { code: 'BIRTHDAY', amount: 2000, limit: 0, uses: 0 },
+  { code: 'WEEKEND', amount: 500, limit: 0, uses: 0 },
+  { code: 'DAILY', amount: 200, limit: 0, uses: 0 },
+  { code: 'WELCOME', amount: 1000, limit: 0, uses: 0 }
+];
+
+document.getElementById('openPromoBtn').addEventListener('click', () => {
+  document.getElementById('promoInput').value = '';
+  document.getElementById('promoModal').classList.add('show');
+});
+document.getElementById('promoCancel').addEventListener('click', () => {
+  document.getElementById('promoModal').classList.remove('show');
+});
+document.getElementById('promoModal').addEventListener('click', e => {
+  if (e.target.id === 'promoModal') e.currentTarget.classList.remove('show');
+});
+document.getElementById('promoConfirm').addEventListener('click', () => {
+  const code = document.getElementById('promoInput').value.trim().toUpperCase();
+  if (!code) { showToast('Введите промокод', 'error'); return; }
+  const promo = promoCodes.find(p => p.code === code);
+  if (!promo) { showToast('❌ Промокод не найден', 'error'); return; }
+  if (promo.limit > 0 && promo.uses >= promo.limit) { showToast('❌ Лимит исчерпан', 'error'); return; }
+  if (!state.usedPromos) state.usedPromos = [];
+  if (state.usedPromos.includes(code)) { showToast('❌ Вы уже использовали', 'error'); return; }
+  state.balance += promo.amount;
+  state.usedPromos.push(code);
+  promo.uses++;
+  save();
+  updateTopBalance();
+  updateProfileStats();
+  document.getElementById('promoModal').classList.remove('show');
+
+  // ✅ КРАСИВАЯ МОДАЛКА
+  document.getElementById('promoSuccessAmount').textContent = '+' + fmt(promo.amount) + ' ₽';
+  document.getElementById('promoSuccessCode').textContent = code;
+  document.getElementById('promoSuccessModal').classList.add('show');
+  playWin();   // ← звук победы
+});
+
+// Закрытие модалки
+document.getElementById('promoSuccessClose').addEventListener('click', () => {
+  document.getElementById('promoSuccessModal').classList.remove('show');
+});
+document.getElementById('promoSuccessModal').addEventListener('click', (e) => {
+  if (e.target.id === 'promoSuccessModal') {
+    e.currentTarget.classList.remove('show');
+  }
+});
+
+/* ================= МОЛНИЯ ================= */
+document.getElementById('fastBtn').addEventListener('click', () => {
+  fastMode = !fastMode;
+  document.getElementById('fastBtn').classList.toggle('active', fastMode);
+});
+
+/* ================= КНОПКА ПРОКАЧАТЬ ================= */
+document.getElementById('upgradeBtn').addEventListener('click', () => spin());
+
+/* ================= КЛИК ЗВУК ================= */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button, .cat-btn, .main-tab, .sub-tab, .percent-btn, .qty-btn, .inv-btn, .cart-btn, .profile-icon, .nav-btn');
+  if (btn) playClick();
+}, true);
+document.addEventListener('click', () => { initAudio(); }, { once: true });
+document.addEventListener('touchstart', () => { initAudio(); }, { once: true });
+
+/* ================= ОНЛАЙН ================= */
+function randomOnline() { return 1900 + Math.floor(Math.random() * 401); }
+function updateOnline() {
+  const el = document.getElementById('onlineCount');
+  if (el) el.textContent = randomOnline().toLocaleString('ru-RU').replace(/,/g, ' ');
+}
+updateOnline();
+setInterval(updateOnline, 8000);
+
+/* ================= НАВИГАЦИЯ ================= */
+function switchScreen(screenName) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen-' + screenName);
+  if (target) target.classList.add('active');
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const navBtn = document.getElementById('nav' + screenName.charAt(0).toUpperCase() + screenName.slice(1));
+  if (navBtn) navBtn.classList.add('active');
+
+  if (screenName === 'bonus') { if (typeof initBonusUI === 'function') initBonusUI(); }
+  if (screenName === 'modes') { if (typeof renderContractSlots === 'function') renderContractSlots(); }
+  if (screenName === 'upgrade') {
+    if (typeof renderInventory === 'function') renderInventory();
+    if (typeof renderBetCards === 'function') renderBetCards();
+    if (typeof updateChance === 'function') updateChance();
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('navModes').addEventListener('click', () => switchScreen('modes'));
+document.getElementById('navUpgrade').addEventListener('click', () => switchScreen('upgrade'));
+document.getElementById('navBonus').addEventListener('click', () => switchScreen('bonus'));
+
+/* ================= СТАРТ ================= */
+load();
+if (!state.accountId) {
+  state.accountId = 1000 + Math.floor(Math.random() * 3001);
+  save();
+}
+if (!state.usedPromos) { state.usedPromos = []; save(); }
+
+updateTopBalance();
+renderShop();
+renderInventory();
+renderWish();
+renderBetCards();
+updateChance();
+updateProfileStats();
+renderArc(0);
+updateCartBadge();
+renderContractSlots();
+initBonusUI();
+document.getElementById('profileBtn').textContent = state.name.charAt(0).toUpperCase();
+
+if (balanceSlider) {
+  balanceSlider.max = state.balance;
+  balanceSlider.value = 0;
+}
+if (balanceSliderValue) balanceSliderValue.textContent = '0 ₽';
+
+document.querySelectorAll('#invFilters .cat-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.filter === state.invFilter);
+});
+document.querySelectorAll('#shopFilters .cat-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.filter === state.shopFilter);
+});
+document.querySelectorAll('#wishFilters .cat-btn').forEach(b => {
+  b.classList.toggle('active', b.dataset.filter === state.wishFilter);
+});
+
+switchScreen('upgrade');
+</script>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ================= SUPABASE ПОДКЛЮЧЕНИЕ ================= */
+const SUPABASE_URL = 'https://sfajywvvbcvpoenkbsqj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmYWp5d3Z2YmN2cG9lbmtic3FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NzgwODAsImV4cCI6MjEwNzU1NDA4MH0.wWRW_y_Kr3kKZ0MFNImulyY7T_c0aiYmm4dDdQfUoV8';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ================= TELEGRAM ================= */
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+const telegramUser = tg.initDataUnsafe?.user;
+
+if (telegramUser) {
+  state.accountId = telegramUser.id;
+  state.name = telegramUser.first_name || 'Player';
+  console.log('TG user:', telegramUser.id, telegramUser.first_name);
+} else {
+  // Если вне Telegram — тестовый ID
+  if (!state.accountId) state.accountId = 999999999;
+  console.log('Вне Telegram — тестовый режим');
+}
+
+/* ================= ЗАГРУЗКА С СЕРВЕРА ================= */
+async function loadFromServer() {
+  if (!state.accountId) return;
+
+  try {
+    // 1. Юзер
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', state.accountId)
+      .maybeSingle();
+
+    if (error) console.error('Ошибка users:', error);
+
+    if (!user && !error) {
+      // Новый юзер — создаём
+      const { error: insErr } = await supabase.from('users').insert({
+        id: state.accountId,
+        name: state.name,
+        balance: 10000
+      });
+      if (insErr) console.error('Ошибка insert:', insErr);
+      else console.log('✅ Новый юзер создан');
+    } else if (user) {
+      // Загружаем данные
+      state.balance = user.balance || 10000;
+      state.name = user.name || state.name;
+      state.upgrades = user.upgrades || 0;
+      state.wins = user.wins || 0;
+      state.clickerTotal = user.clicker_total || 0;
+      state.lastCaseOpen = user.last_case_open || 0;
+      console.log('✅ Юзер загружен:', user.balance, '₽');
+
+      // 2. Инвентарь
+      const { data: inv } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('user_id', state.accountId);
+
+      if (inv) {
+        state.inventory = inv.map(i => ({ id: i.skin_id, price: i.price, chance: i.chance || 100 }));
+        state.protected = inv
+          .map((i, idx) => i.protected ? idx : -1)
+          .filter(i => i !== -1);
+        console.log('✅ Инвентарь:', inv.length, 'скинов');
+      }
+
+      // 3. Промокоды
+      const { data: promos } = await supabase
+        .from('used_promos')
+        .select('code')
+        .eq('user_id', state.accountId);
+
+      if (promos) {
+        state.usedPromos = promos.map(p => p.code);
+      }
+
+      // Обновляем UI
+      updateTopBalance();
+      renderInventory();
+      updateProfileStats();
+      renderProfileInventory();
+      updateCaseUI();
+      updateClickerUI();
+    }
+  } catch (e) {
+    console.error('❌ Ошибка загрузки:', e);
+  }
+}
+
+/* ================= СОХРАНЕНИЕ НА СЕРВЕР ================= */
+async function saveToServer() {
+  if (!state.accountId) return;
+
+  try {
+    // 1. Основные данные юзера
+    await supabase.from('users').upsert({
+      id: state.accountId,
+      name: state.name,
+      balance: Math.floor(state.balance),
+      upgrades: state.upgrades,
+      wins: state.wins,
+      clicker_total: Math.floor(state.clickerTotal || 0),
+      last_case_open: state.lastCaseOpen || 0
+    });
+
+    // 2. Инвентарь — удалить + вставить заново
+    await supabase.from('inventory').delete().eq('user_id', state.accountId);
+
+    if (state.inventory.length > 0) {
+      await supabase.from('inventory').insert(
+        state.inventory.map((item, idx) => ({
+          user_id: state.accountId,
+          skin_id: item.id,
+          price: item.price,
+          chance: item.chance || 100,
+          protected: state.protected.includes(idx)
+        }))
+      );
+    }
+
+    // 3. Промокоды
+    if (state.usedPromos && state.usedPromos.length > 0) {
+      for (const code of state.usedPromos) {
+        await supabase.from('used_promos').upsert({
+          user_id: state.accountId,
+          code: code
+        }, { onConflict: 'user_id,code' });
+      }
+    }
+  } catch (e) {
+    console.error('❌ Ошибка сохранения:', e);
+  }
+}
+
+/* ================= СТАРТ: загрузка с сервера ================= */
+loadFromServer();
+</script>
+</body>
+</html>
