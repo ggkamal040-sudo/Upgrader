@@ -1728,7 +1728,7 @@ let cart = {};
 
 function save() {
   localStorage.setItem('upgrader_state', JSON.stringify(state));
-  saveToServer();  // ← на сервер
+  if (typeof saveToServer === 'function') saveToServer();
 }
 function load() {
   const s = localStorage.getItem('upgrader_state');
