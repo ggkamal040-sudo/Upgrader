@@ -3669,6 +3669,18 @@ document.getElementById('adminSearchBtn').addEventListener('click', async functi
 setTimeout(function() { checkAdminRights(); }, 1500);
 
 /* ================= ДОНАТЫ ================= */
+document.getElementById('openDonateBtn')?.addEventListener('click', () => {
+  document.getElementById('donateModal').classList.add('show');
+});
+
+document.getElementById('donateCancel')?.addEventListener('click', () => {
+  document.getElementById('donateModal').classList.remove('show');
+});
+
+document.getElementById('donateModal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'donateModal') e.currentTarget.classList.remove('show');
+});
+
 document.querySelectorAll('.donate-pack').forEach(btn => {
   btn.addEventListener('click', async () => {
     const stars = parseInt(btn.dataset.stars);
@@ -3708,6 +3720,7 @@ document.querySelectorAll('.donate-pack').forEach(btn => {
     }
   });
 });
+
 /* ================= АДМИНКА: ЗАЯВКИ НА ДОНАТ ================= */
 document.getElementById('adminLoadDonations')?.addEventListener('click', async function() {
   var list = document.getElementById('adminDonationsList');
