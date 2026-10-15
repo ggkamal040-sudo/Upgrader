@@ -931,6 +931,7 @@
 </style>
 </head>
 <body>
+<div class="toast-container" id="toastContainer"></div>
 
 <div class="app">
   <div class="topbar">
@@ -1300,7 +1301,12 @@
         <div class="profile-inv-title">Мой инвентарь</div>
         <div class="profile-inv-grid" id="profileInvGrid"></div>
 
-        <div style="margin-bottom:16px;">
+       <div style="margin-bottom:16px;">
+      <button class="profile-sell-all" id="openDonateBtn" style="background:linear-gradient(180deg,#16a34a,#15803d);color:#fff;">
+         Пополнить баланс
+      </button>
+      </div>
+          <div style="margin-bottom:16px;">
           <button class="profile-sell-all" id="openPromoBtn" style="background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;">
             Активировать промокод
           </button>
@@ -1330,6 +1336,51 @@
     </div>
   </div>
 
+<!-- ================= МОДАЛКА ДОНАТА ================= -->
+<div class="input-modal" id="donateModal">
+  <div class="input-box" style="max-width:420px;">
+    <h4>⭐ Пополнение баланса</h4>
+    <p>Отправьте звёзды боту <b style="color:#f5c518;">@UpgraderSimulator_bot</b>, затем выберите пакет ниже</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
+
+      <button class="input-btn confirm donate-pack" data-stars="10" data-amount="50000"
+        style="padding:14px;font-size:0.88rem;display:flex;flex-direction:column;gap:4px;">
+        <span>10 ⭐ → 50 000 ₽</span>
+      </button>
+
+      <button class="input-btn confirm donate-pack" data-stars="100" data-amount="500000"
+        style="padding:14px;font-size:0.88rem;display:flex;flex-direction:column;gap:4px;">
+        <span>100 ⭐ → 500 000 ₽</span>
+      </button>
+
+      <button class="input-btn confirm donate-pack" data-stars="900" data-amount="5000000"
+        style="padding:14px;font-size:0.88rem;display:flex;flex-direction:column;gap:4px;">
+        <span>900 ⭐ → 5 000 000 ₽</span>
+        <span style="font-size:0.68rem;color:#0d0d10;font-weight:700;opacity:0.7;">🔥 Скидка 10% · экономия 100 ⭐</span>
+      </button>
+
+      <button class="input-btn confirm donate-pack" data-stars="7500" data-amount="50000000"
+        style="padding:14px;font-size:0.88rem;display:flex;flex-direction:column;gap:4px;">
+        <span>7500 ⭐ → 50 000 000 ₽</span>
+        <span style="font-size:0.68rem;color:#0d0d10;font-weight:700;opacity:0.7;">🔥 Скидка 25% · экономия 2 500 ⭐</span>
+      </button>
+
+    </div>
+
+    <div style="background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.3);border-radius:10px;padding:10px;margin-bottom:14px;font-size:0.72rem;color:#f5c518;line-height:1.5;text-align:left;">
+      📌 <b>Как пополнить:</b><br>
+      1. Открой бота @UpgraderSimulator_bot<br>
+      2. Отправь ему нужное количество звёзд<br>
+      3. Вернись сюда и выбери пакет<br>
+      4. Баланс зачислится после проверки
+    </div>
+
+    <div class="input-row">
+      <button class="input-btn cancel" id="donateCancel" style="width:100%;">Закрыть</button>
+    </div>
+  </div>
+</div>
   <!-- ================= МОДАЛКА ПРОМО ================= -->
   <div class="input-modal" id="promoModal">
     <div class="input-box">
@@ -1412,7 +1463,14 @@
       <button class="admin-btn admin-btn-gray" id="adminSearchBtn">Найти</button>
       <div class="admin-users" id="adminSearchResult"></div>
     </div>
-
+     
+   <div class="admin-card">
+  <div class="admin-card-title">Заявки на пополнение</div>
+  <button class="admin-btn admin-btn-gray" id="adminLoadDonations">Загрузить заявки</button>
+  <div class="admin-users" id="adminDonationsList"></div>
+    </div>
+    
+    
     <div class="admin-card">
       <div class="admin-card-title">Топ-100 по балансу</div>
       <button class="admin-btn admin-btn-gray" id="adminTopBtn">Загрузить топ</button>
@@ -3178,28 +3236,6 @@ document.getElementById('promoCancel').addEventListener('click', () => {
 document.getElementById('promoModal').addEventListener('click', e => {
   if (e.target.id === 'promoModal') e.currentTarget.classList.remove('show');
 });
-document.getElementById('promoConfirm').addEventListener('click', () => {
-  const code = document.getElementById('promoInput').value.trim().toUpperCase();
-  if (!code) { showToast('Введите промокод', 'error'); return; }
-  const promo = promoCodes.find(p => p.code === code);
-  if (!promo) { showToast('❌ Промокод не найден', 'error'); return; }
-  if (promo.limit > 0 && promo.uses >= promo.limit) { showToast('❌ Лимит исчерпан', 'error'); return; }
-  if (!state.usedPromos) state.usedPromos = [];
-  if (state.usedPromos.includes(code)) { showToast('❌ Вы уже использовали', 'error'); return; }
-  state.balance += promo.amount;
-  state.usedPromos.push(code);
-  promo.uses++;
-  save();
-  updateTopBalance();
-  updateProfileStats();
-  document.getElementById('promoModal').classList.remove('show');
-
-  // ✅ КРАСИВАЯ МОДАЛКА
-  document.getElementById('promoSuccessAmount').textContent = '+' + fmt(promo.amount) + ' ₽';
-  document.getElementById('promoSuccessCode').textContent = code;
-  document.getElementById('promoSuccessModal').classList.add('show');
-  playWin();   // ← звук победы
-});
 
 // Закрытие модалки
 document.getElementById('promoSuccessClose').addEventListener('click', () => {
@@ -3631,6 +3667,112 @@ document.getElementById('adminSearchBtn').addEventListener('click', async functi
 
 /* ================= СТАРТ: проверка прав админа ================= */
 setTimeout(function() { checkAdminRights(); }, 1500);
+
+/* ================= ДОНАТЫ ================= */
+document.querySelectorAll('.donate-pack').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const stars = parseInt(btn.dataset.stars);
+    const amount = parseInt(btn.dataset.amount);
+
+    try {
+      // 1. Создаём заявку в Supabase
+      const { data, error } = await supabase.from('donation_requests').insert({
+        user_id: state.accountId,
+        method: 'stars',
+        stars: stars,
+        amount: amount,
+        status: 'pending'
+      }).select().single();
+
+      if (error) {
+        showToast('❌ Ошибка: ' + error.message, 'error');
+        return;
+      }
+
+      // 2. Уведомляем админа через бота
+      await fetch('https://my-bot.ggkamal040.workers.dev/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: state.accountId,
+          stars: stars,
+          amount: amount,
+          request_id: data.id
+        })
+      });
+
+      showToast('✅ Заявка создана! Ожидайте проверки', 'success');
+      document.getElementById('donateModal').classList.remove('show');
+    } catch (e) {
+      showToast('❌ ' + e.message, 'error');
+    }
+  });
+});
+/* ================= АДМИНКА: ЗАЯВКИ НА ДОНАТ ================= */
+document.getElementById('adminLoadDonations')?.addEventListener('click', async function() {
+  var list = document.getElementById('adminDonationsList');
+  list.innerHTML = '<div style="text-align:center;color:#888;padding:12px;">Загрузка...</div>';
+
+  try {
+    var res = await supabase
+      .from('donation_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (res.error) {
+      list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">' + res.error.message + '</div>';
+      return;
+    }
+
+    if (!res.data || res.data.length === 0) {
+      list.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">Нет новых заявок</div>';
+      return;
+    }
+
+    list.innerHTML = res.data.map(function(r) {
+      return '<div class="admin-user-row" data-req="' + r.id + '">' +
+        '<span class="u-id">ID ' + r.user_id + '</span>' +
+        '<span class="u-name">' + r.stars + ' ⭐ → ' + fmt(r.amount) + ' ₽</span>' +
+        '<span class="u-actions">' +
+          '<button class="admin-mini-btn" data-approve="' + r.id + '" data-user="' + r.user_id + '" data-amount="' + r.amount + '" style="background:#16a34a;color:#fff;">✓</button>' +
+          '<button class="admin-mini-btn" data-reject="' + r.id + '" style="background:#dc2626;color:#fff;">✕</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    list.querySelectorAll('[data-approve]').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var reqId = parseInt(btn.dataset.approve);
+        var uid = parseInt(btn.dataset.user);
+        var amount = parseInt(btn.dataset.amount);
+
+        var userRes = await supabase.from('users').select('balance').eq('id', uid).maybeSingle();
+        if (userRes.error || !userRes.data) {
+          alert('Юзер не найден');
+          return;
+        }
+
+        var newBalance = (userRes.data.balance || 0) + amount;
+        await supabase.from('users').update({ balance: newBalance }).eq('id', uid);
+        await supabase.from('donation_requests').update({ status: 'approved' }).eq('id', reqId);
+
+        btn.closest('.admin-user-row').remove();
+      });
+    });
+
+    list.querySelectorAll('[data-reject]').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var reqId = parseInt(btn.dataset.reject);
+        await supabase.from('donation_requests').update({ status: 'rejected' }).eq('id', reqId);
+        btn.closest('.admin-user-row').remove();
+      });
+    });
+
+  } catch (e) {
+    list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">' + e.message + '</div>';
+  }
+});
 </script>
 </body>
 </html>
