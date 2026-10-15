@@ -3451,17 +3451,30 @@ loadFromServer();
 async function checkAdminRights() {
   if (!state.accountId) return;
   try {
-    var res = await supabase
+    const { data, error } = await supabase
       .from('admins')
       .select('id')
       .eq('id', state.accountId)
       .maybeSingle();
-    if (res.data && res.data.id) {
-      var btn = document.getElementById('openAdminBtn');
-      if (btn) btn.style.display = 'block';
-      console.log('✅ Админ: доступ разрешён');
+
+    const btn = document.getElementById('openAdminBtn');
+    if (!btn) {
+      console.warn('⚠️ Кнопка openAdminBtn не найдена в DOM');
+      return;
+    }
+
+    if (error) {
+      console.error('Ошибка проверки админа:', error);
+      btn.style.display = 'none';
+      return;
+    }
+
+    if (data && data.id) {
+      btn.style.display = 'block';
+      console.log('✅ Админ: доступ разрешён для', data.id);
     } else {
-      console.log('⛔ Не админ');
+      btn.style.display = 'none';
+      console.log('⛔ Не админ:', state.accountId);
     }
   } catch (e) {
     console.error('Ошибка проверки админа:', e);
