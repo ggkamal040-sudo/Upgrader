@@ -727,6 +727,207 @@
   font-size: 0.95rem;
   letter-spacing: 0.5px;
 }
+
+/* ================= АДМИНКА ================= */
+.admin-screen { padding: 16px; max-width: 520px; margin: 0 auto; }
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(220,38,38,0.4);
+}
+
+.admin-header h2 {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #dc2626;
+  letter-spacing: 1px;
+  margin: 0;
+  text-shadow: 0 0 12px rgba(220,38,38,0.5);
+}
+
+.admin-close {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #ddd;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.admin-card {
+  background: linear-gradient(180deg, #1a1a20, #121217);
+  border: 1px solid rgba(220,38,38,0.25);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(220,38,38,0.1), transparent 70%);
+  pointer-events: none;
+}
+
+.admin-card-title {
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: 0.4px;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  outline: none;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-input::placeholder { color: #555; font-weight: 400; }
+.admin-input:focus { border-color: rgba(220,38,38,0.6); box-shadow: 0 0 0 2px rgba(220,38,38,0.15); }
+
+.admin-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  border: none;
+  margin-top: 4px;
+  transition: 0.15s;
+  position: relative;
+  z-index: 1;
+  font-family: inherit;
+}
+
+.admin-btn:active { transform: scale(0.98); }
+.admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.admin-btn-gold { background: linear-gradient(180deg, #f5c518, #d4a017); color: #0d0d10; }
+.admin-btn-red { background: linear-gradient(180deg, #dc2626, #991b1b); color: #fff; }
+.admin-btn-green { background: linear-gradient(180deg, #16a34a, #15803d); color: #fff; }
+.admin-btn-gray { background: rgba(255,255,255,0.06); color: #ddd; border: 1px solid rgba(255,255,255,0.1); }
+
+.admin-row { display: flex; gap: 8px; position: relative; z-index: 1; }
+.admin-row .admin-btn { flex: 1; }
+
+.admin-hint {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 10px;
+  min-height: 18px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-hint.ok { color: #4ade80; }
+.admin-hint.err { color: #ff6b6b; }
+
+.admin-users {
+  margin-top: 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.admin-users::-webkit-scrollbar { width: 4px; }
+.admin-users::-webkit-scrollbar-thumb { background: rgba(220,38,38,0.4); border-radius: 2px; }
+
+.admin-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+}
+
+.admin-user-row .u-id {
+  color: #f5c518;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  flex-shrink: 0;
+}
+
+.admin-user-row .u-name {
+  color: #fff;
+  font-weight: 700;
+  flex: 1;
+  margin-left: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-row .u-balance {
+  color: #4ade80;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.admin-user-row.banned {
+  opacity: 0.5;
+  border-color: rgba(220,38,38,0.4);
+}
+
+.admin-user-row.banned .u-name::after {
+  content: ' 🚫';
+}
+
+.admin-user-row .u-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.admin-mini-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #ddd;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-mini-btn:active { transform: scale(0.95); }
 </style>
 </head>
 <body>
@@ -1105,6 +1306,9 @@
           </button>
         </div>
 
+        <button class="profile-sell-all" id="openAdminBtn" style="display:none; margin-bottom:12px; background:linear-gradient(180deg,#dc2626,#991b1b);color:#fff;">
+       Админ-панель
+        </button>
         <button class="profile-sell-all" id="sellAllBtn">
           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1.93.66 1.73 1.66 1.98 1.03.26 2.24.06 2.24-1.13 0-1.03-1.03-1.36-2.5-1.75-1.71-.44-3.14-1.16-3.14-3.02 0-1.79 1.43-2.87 3.14-3.21V5h2.67v1.95c1.79.36 3.13 1.55 3.24 3.34h-1.98c-.08-1.14-.98-1.76-2-1.9-1.3-.18-2.1.45-2.1 1.23 0 .98 1.02 1.26 2.55 1.67 1.74.46 3.09 1.18 3.09 3.04 0 1.95-1.56 2.97-3.29 3.26z"/></svg>
           Продать весь инвентарь
@@ -1167,7 +1371,56 @@
     </div>
   </div>
 
-  <!-- ================= НИЖНЕЕ МЕНЮ ================= -->
+  <!-- ================= ЭКРАН: АДМИНКА ================= -->
+<div class="screen" id="screen-admin">
+  <div class="admin-screen">
+    <div class="admin-header">
+      <h2>⚙️ АДМИН-ПАНЕЛЬ</h2>
+      <button class="admin-close" onclick="switchScreen('upgrade')">✕</button>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Выдать баланс по ID</div>
+      <input type="number" class="admin-input" id="adminGiveId" placeholder="ID пользователя">
+      <input type="number" class="admin-input" id="adminGiveAmount" placeholder="Сумма (можно минус)">
+      <button class="admin-btn admin-btn-gold" id="adminGiveBtn">Выдать</button>
+      <div class="admin-hint" id="adminGiveHint"></div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Создать промокод</div>
+      <input type="text" class="admin-input" id="adminPromoCode" placeholder="Код (SUPER2025)" style="text-transform:uppercase;">
+      <input type="number" class="admin-input" id="adminPromoAmount" placeholder="Сумма (₽)">
+      <input type="number" class="admin-input" id="adminPromoLimit" placeholder="Лимит (0 = безлимит)">
+      <button class="admin-btn admin-btn-gold" id="adminPromoBtn">Создать</button>
+      <div class="admin-hint" id="adminPromoHint"></div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Бан по ID</div>
+      <input type="number" class="admin-input" id="adminBanId" placeholder="ID пользователя">
+      <div class="admin-row">
+        <button class="admin-btn admin-btn-red" id="adminBanBtn">Забанить</button>
+        <button class="admin-btn admin-btn-green" id="adminUnbanBtn">Разбанить</button>
+      </div>
+      <div class="admin-hint" id="adminBanHint"></div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">🔍 Поиск по ID</div>
+      <input type="number" class="admin-input" id="adminSearchId" placeholder="ID пользователя">
+      <button class="admin-btn admin-btn-gray" id="adminSearchBtn">Найти</button>
+      <div class="admin-users" id="adminSearchResult"></div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-title">Топ-100 по балансу</div>
+      <button class="admin-btn admin-btn-gray" id="adminTopBtn">Загрузить топ</button>
+      <div class="admin-users" id="adminTopList"></div>
+    </div>
+  </div>
+</div>
+<!-- ================= НИЖНЕЕ МЕНЮ ================= -->
   <div class="bottom-nav">
     <button class="nav-btn" id="navModes" data-screen="modes">
       <svg viewBox="0 0 24 24">
@@ -2874,60 +3127,46 @@ document.getElementById('sellAllBtn').addEventListener('click', () => {
   updateChance();
   showToast('✅ Продано на ' + fmt(total) + ' ₽', 'success');
 });
+document.getElementById('promoConfirm').addEventListener('click', async () => {
+  const code = document.getElementById('promoInput').value.trim().toUpperCase();
+  if (!code) { showToast('Введите промокод', 'error'); return; }
 
-/* ================= ПРОМОКОДЫ ================= */
-const promoCodes = [
-  { code: 'UPGRADER2024', amount: 100, limit: 10000, uses: 0 },
-  { code: 'open', amount: 7500, limit: 500, uses: 0 },
-  { code: 'kilss', amount: 7000, limit: 1, uses: 0 },
-  { code: 'BONUS500', amount: 5000, limit: 0, uses: 0 },
-  { code: 'BONUS1000', amount: 1000, limit: 0, uses: 0 },
-  { code: 'BONUS5000', amount: 5000, limit: 0, uses: 0 },
-  { code: 'BONUS10000', amount: 10000, limit: 50, uses: 0 },
-  { code: 'PROMO2024', amount: 2000, limit: 0, uses: 0 },
-  { code: 'PROMO2025', amount: 2500, limit: 0, uses: 0 },
-  { code: 'CSGO2024', amount: 1500, limit: 0, uses: 0 },
-  { code: 'CS2FREE', amount: 800, limit: 0, uses: 0 },
-  { code: 'DRAGONLORE', amount: 10000, limit: 100, uses: 0 },
-  { code: 'HOWL2024', amount: 15000, limit: 50, uses: 0 },
-  { code: 'AWPDRAGON', amount: 10000, limit: 100, uses: 0 },
-  { code: 'KARAMBIT', amount: 5000, limit: 200, uses: 0 },
-  { code: 'BUTTERFLY', amount: 5000, limit: 200, uses: 0 },
-  { code: 'M4A4HOWL', amount: 12000, limit: 100, uses: 0 },
-  { code: 'AKREDLINE', amount: 1000, limit: 500, uses: 0 },
-  { code: 'DESERTEAGLE', amount: 2000, limit: 300, uses: 0 },
-  { code: 'KNIFE500', amount: 500, limit: 0, uses: 0 },
-  { code: 'STICKER100', amount: 100, limit: 0, uses: 0 },
-  { code: 'STATTRAK', amount: 3000, limit: 200, uses: 0 },
-  { code: 'VIP2024', amount: 5000, limit: 50, uses: 0 },
-  { code: 'LUCKY777', amount: 777, limit: 0, uses: 0 },
-  { code: 'LUCKY888', amount: 888, limit: 0, uses: 0 },
-  { code: 'LUCKY999', amount: 999, limit: 0, uses: 0 },
-  { code: 'START1000', amount: 1000, limit: 0, uses: 0 },
-  { code: 'NEWYEAR2025', amount: 2025, limit: 0, uses: 0 },
-  { code: 'GIVEAWAY', amount: 3000, limit: 100, uses: 0 },
-  { code: 'TWITCH', amount: 2000, limit: 100, uses: 0 },
-  { code: 'YOUTUBE', amount: 2000, limit: 100, uses: 0 },
-  { code: 'TIKTOK', amount: 1500, limit: 100, uses: 0 },
-  { code: 'INSTAGRAM', amount: 1500, limit: 100, uses: 0 },
-  { code: 'DISCORD', amount: 1000, limit: 100, uses: 0 },
-  { code: 'TELEGRAM', amount: 1000, limit: 100, uses: 0 },
-  { code: 'FACEBOOK', amount: 1000, limit: 100, uses: 0 },
-  { code: 'VK2024', amount: 1000, limit: 100, uses: 0 },
-  { code: 'REDDIT', amount: 1000, limit: 100, uses: 0 },
-  { code: 'STEAM2024', amount: 1500, limit: 0, uses: 0 },
-  { code: 'VALVE2024', amount: 2500, limit: 50, uses: 0 },
-  { code: 'SUMMER2024', amount: 1200, limit: 0, uses: 0 },
-  { code: 'WINTER2024', amount: 1200, limit: 0, uses: 0 },
-  { code: 'SPRING2024', amount: 1200, limit: 0, uses: 0 },
-  { code: 'AUTUMN2024', amount: 1200, limit: 0, uses: 0 },
-  { code: 'HALLOWEEN', amount: 1500, limit: 0, uses: 0 },
-  { code: 'CHRISTMAS', amount: 1500, limit: 0, uses: 0 },
-  { code: 'BIRTHDAY', amount: 2000, limit: 0, uses: 0 },
-  { code: 'WEEKEND', amount: 500, limit: 0, uses: 0 },
-  { code: 'DAILY', amount: 200, limit: 0, uses: 0 },
-  { code: 'WELCOME', amount: 1000, limit: 0, uses: 0 }
-];
+  // Проверка, использовал ли юзер
+  if (!state.usedPromos) state.usedPromos = [];
+  if (state.usedPromos.includes(code)) { showToast('❌ Вы уже использовали', 'error'); return; }
+
+  // Запрос в БД
+  const { data: promo, error } = await supabase
+    .from('promo_codes')
+    .select('*')
+    .eq('code', code)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (error || !promo) { showToast('❌ Промокод не найден', 'error'); return; }
+  if (promo.max_uses > 0 && promo.uses >= promo.max_uses) { showToast('❌ Лимит исчерпан', 'error'); return; }
+
+  // Начисляем баланс
+  state.balance += promo.amount;
+  state.usedPromos.push(code);
+  save();
+
+  // Увеличиваем счётчик uses в БД
+  await supabase.from('promo_codes').update({ uses: promo.uses + 1 }).eq('code', code);
+
+  // Запись в used_promos
+  await supabase.from('used_promos').insert({ user_id: state.accountId, code: code });
+
+  updateTopBalance();
+  updateProfileStats();
+  document.getElementById('promoModal').classList.remove('show');
+
+  // Красивая модалка
+  document.getElementById('promoSuccessAmount').textContent = '+' + fmt(promo.amount) + ' ₽';
+  document.getElementById('promoSuccessCode').textContent = code;
+  document.getElementById('promoSuccessModal').classList.add('show');
+  playWin();
+});
 
 document.getElementById('openPromoBtn').addEventListener('click', () => {
   document.getElementById('promoInput').value = '';
@@ -3205,6 +3444,181 @@ async function saveToServer() {
 
 /* ================= СТАРТ: загрузка с сервера ================= */
 loadFromServer();
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ================= АДМИНКА: ЛОГИКА ================= -->
+<script>
+/* ================= АДМИНКА: ПРОВЕРКА ПРАВ ================= */
+async function checkAdminRights() {
+  if (!state.accountId) return;
+  try {
+    var res = await supabase
+      .from('admins')
+      .select('id')
+      .eq('id', state.accountId)
+      .maybeSingle();
+    if (res.data && res.data.id) {
+      var btn = document.getElementById('openAdminBtn');
+      if (btn) btn.style.display = 'block';
+      console.log('✅ Админ: доступ разрешён');
+    } else {
+      console.log('⛔ Не админ');
+    }
+  } catch (e) {
+    console.error('Ошибка проверки админа:', e);
+  }
+}
+
+/* ================= ОТКРЫТИЕ АДМИНКИ ================= */
+document.getElementById('openAdminBtn').addEventListener('click', function() {
+  document.getElementById('profileModal').classList.remove('show');
+  switchScreen('admin');
+  document.getElementById('adminGiveHint').textContent = '';
+  document.getElementById('adminPromoHint').textContent = '';
+  document.getElementById('adminBanHint').textContent = '';
+});
+
+/* ================= ХЕЛПЕР: HINT ================= */
+function showAdminHint(id, text, ok) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'admin-hint ' + (ok ? 'ok' : 'err');
+  setTimeout(function() { el.textContent = ''; el.className = 'admin-hint'; }, 4000);
+}
+
+/* ================= 1. ВЫДАТЬ БАЛАНС ================= */
+document.getElementById('adminGiveBtn').addEventListener('click', async function() {
+  var uid = parseInt(document.getElementById('adminGiveId').value);
+  var amount = parseInt(document.getElementById('adminGiveAmount').value);
+  if (!uid || !amount) { showAdminHint('adminGiveHint', '❌ Заполни ID и сумму', false); return; }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Отправка...';
+
+  try {
+    var res = await supabase.from('users').select('balance, name').eq('id', uid).maybeSingle();
+    if (res.error) { showAdminHint('adminGiveHint', '❌ Ошибка: ' + res.error.message, false); btn.disabled = false; btn.textContent = 'Выдать'; return; }
+    if (!res.data) { showAdminHint('adminGiveHint', '❌ Юзер не найден', false); btn.disabled = false; btn.textContent = 'Выдать'; return; }
+
+    var newBalance = Math.max(0, (res.data.balance || 0) + amount);
+    var upd = await supabase.from('users').update({ balance: newBalance }).eq('id', uid);
+    if (upd.error) { showAdminHint('adminGiveHint', '❌ Ошибка update', false); }
+    else {
+      showAdminHint('adminGiveHint', '✅ ' + res.data.name + ': ' + (amount > 0 ? '+' : '') + amount + ' ₽ (было ' + res.data.balance + ', стало ' + newBalance + ')', true);
+      await supabase.from('admin_logs').insert({
+        admin_id: state.accountId, action: 'give_balance', target_user_id: uid, amount: amount
+      });
+      document.getElementById('adminGiveId').value = '';
+      document.getElementById('adminGiveAmount').value = '';
+    }
+  } catch (e) { showAdminHint('adminGiveHint', '❌ ' + e.message, false); }
+  btn.disabled = false;
+  btn.textContent = 'Выдать';
+});
+
+/* ================= 2. СОЗДАТЬ ПРОМОКОД ================= */
+document.getElementById('adminPromoBtn').addEventListener('click', async function() {
+  var code = (document.getElementById('adminPromoCode').value || '').trim().toUpperCase();
+  var amount = parseInt(document.getElementById('adminPromoAmount').value);
+  var limit = parseInt(document.getElementById('adminPromoLimit').value) || 0;
+  if (!code || !amount) { showAdminHint('adminPromoHint', '❌ Заполни код и сумму', false); return; }
+
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Создание...';
+
+  try {
+    var ins = await supabase.from('promo_codes').insert({
+      code: code, amount: amount, max_uses: limit, uses: 0, active: true
+    });
+    if (ins.error) {
+      if (ins.error.code === '23505') showAdminHint('adminPromoHint', '❌ Такой код уже существует', false);
+      else showAdminHint('adminPromoHint', '❌ ' + ins.error.message, false);
+    } else {
+      showAdminHint('adminPromoHint', '✅ Промокод ' + code + ' создан: +' + amount + ' ₽ (лимит: ' + (limit === 0 ? '∞' : limit) + ')', true);
+      await supabase.from('admin_logs').insert({
+        admin_id: state.accountId, action: 'create_promo', amount: amount
+      });
+      document.getElementById('adminPromoCode').value = '';
+      document.getElementById('adminPromoAmount').value = '';
+      document.getElementById('adminPromoLimit').value = '';
+    }
+  } catch (e) { showAdminHint('adminPromoHint', '❌ ' + e.message, false); }
+  btn.disabled = false;
+  btn.textContent = 'Создать';
+});
+
+/* ================= 3. БАН ================= */
+document.getElementById('adminBanBtn').addEventListener('click', async function() {
+  var uid = parseInt(document.getElementById('adminBanId').value);
+  if (!uid) { showAdminHint('adminBanHint', '❌ Введи ID', false); return; }
+  try {
+    var upd = await supabase.from('users').update({ banned: true }).eq('id', uid);
+    if (upd.error) showAdminHint('adminBanHint', '❌ ' + upd.error.message, false);
+    else {
+      showAdminHint('adminBanHint', '🚫 Юзер ' + uid + ' забанен', true);
+      await supabase.from('admin_logs').insert({ admin_id: state.accountId, action: 'ban', target_user_id: uid });
+      document.getElementById('adminBanId').value = '';
+    }
+  } catch (e) { showAdminHint('adminBanHint', '❌ ' + e.message, false); }
+});
+
+document.getElementById('adminUnbanBtn').addEventListener('click', async function() {
+  var uid = parseInt(document.getElementById('adminBanId').value);
+  if (!uid) { showAdminHint('adminBanHint', '❌ Введи ID', false); return; }
+  try {
+    var upd = await supabase.from('users').update({ banned: false }).eq('id', uid);
+    if (upd.error) showAdminHint('adminBanHint', '❌ ' + upd.error.message, false);
+    else {
+      showAdminHint('adminBanHint', '✅ Юзер ' + uid + ' разбанен', true);
+      await supabase.from('admin_logs').insert({ admin_id: state.accountId, action: 'unban', target_user_id: uid });
+      document.getElementById('adminBanId').value = '';
+    }
+  } catch (e) { showAdminHint('adminBanHint', '❌ ' + e.message, false); }
+});
+
+/* ================= 4. ТОП-100 ================= */
+document.getElementById('adminTopBtn').addEventListener('click', async function() {
+  var list = document.getElementById('adminTopList');
+  list.innerHTML = '<div style="text-align:center;color:#888;padding:12px;">Загрузка...</div>';
+  try {
+    var res = await supabase.from('users').select('id, name, balance, banned').order('balance', { ascending: false }).limit(100);
+    if (res.error) { list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">Ошибка: ' + res.error.message + '</div>'; return; }
+    if (!res.data || res.data.length === 0) { list.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">Пусто</div>'; return; }
+    list.innerHTML = res.data.map(function(u, i) {
+      return '<div class="admin-user-row' + (u.banned ? ' banned' : '') + '">' +
+        '<span class="u-id">#' + (i + 1) + ' ' + u.id + '</span>' +
+        '<span class="u-name">' + (u.name || 'Player') + '</span>' +
+        '<span class="u-balance">' + fmt(u.balance || 0) + ' ₽</span>' +
+        '</div>';
+    }).join('');
+  } catch (e) { list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">' + e.message + '</div>'; }
+});
+
+/* ================= 5. ПОИСК ПО ID ================= */
+document.getElementById('adminSearchBtn').addEventListener('click', async function() {
+  var uid = parseInt(document.getElementById('adminSearchId').value);
+  var list = document.getElementById('adminSearchResult');
+  if (!uid) { list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">Введи ID</div>'; return; }
+  list.innerHTML = '<div style="text-align:center;color:#888;padding:12px;">Поиск...</div>';
+  try {
+    var res = await supabase.from('users').select('id, name, balance, banned, upgrades, wins').eq('id', uid).maybeSingle();
+    if (res.error) { list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">' + res.error.message + '</div>'; return; }
+    if (!res.data) { list.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">Юзер не найден</div>'; return; }
+    var u = res.data;
+    list.innerHTML = '<div class="admin-user-row' + (u.banned ? ' banned' : '') + '">' +
+      '<span class="u-id">' + u.id + '</span>' +
+      '<span class="u-name">' + (u.name || 'Player') + '</span>' +
+      '<span class="u-balance">' + fmt(u.balance || 0) + ' ₽</span>' +
+      '</div>' +
+      '<div style="font-size:0.72rem;color:#888;text-align:center;padding:6px;">Апгрейдов: ' + (u.upgrades || 0) + ' · Побед: ' + (u.wins || 0) + '</div>';
+  } catch (e) { list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">' + e.message + '</div>'; }
+});
+
+/* ================= СТАРТ: проверка прав админа ================= */
+setTimeout(function() { checkAdminRights(); }, 1500);
 </script>
 </body>
 </html>
