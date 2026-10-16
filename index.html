@@ -3687,104 +3687,42 @@ document.querySelectorAll('.donate-pack').forEach(btn => {
     const amount = parseInt(btn.dataset.amount);
 
     try {
-      // 1. Создаём заявку в Supabase
-      const { data, error } = await supabase.from('donation_requests').insert({
-        user_id: state.accountId,
-        method: 'stars',
-        stars: stars,
-        amount: amount,
-        status: 'pending'
-      }).select().single();
-
-      if (error) {
-        showToast('❌ Ошибка: ' + error.message, 'error');
-        return;
-      }
-
-      // 2. Уведомляем админа через бота
-      await fetch('https://my-bot.ggkamal040.workers.dev/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('https://my-bot.ggkamal040.workers.dev/create-invoice', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: state.accountId,
           stars: stars,
-          amount: amount,
-          request_id: data.id
+          game_amount: amount
         })
       });
 
-      showToast('✅ Заявка создана! Ожидайте проверки', 'success');
+      const data = await res.json();
+
+      if (!data.ok) {
+        showToast('❌ Ошибка создания счёта', 'error');
+        return;
+      }
+
+      if (tg.openInvoice) {
+        tg.openInvoice(data.pay_url, (status) => {
+          if (status === "paid") {
+            showToast('✅ Оплата прошла! Ожидайте зачисления', 'success');
+          } else if (status === "cancelled") {
+            showToast('❌ Оплата отменена', 'error');
+          } else if (status === "failed") {
+            showToast('❌ Ошибка оплаты', 'error');
+          }
+        });
+      } else {
+        window.open(data.pay_url, "_blank");
+      }
+
       document.getElementById('donateModal').classList.remove('show');
     } catch (e) {
       showToast('❌ ' + e.message, 'error');
     }
   });
-});
-
-/* ================= АДМИНКА: ЗАЯВКИ НА ДОНАТ ================= */
-document.getElementById('adminLoadDonations')?.addEventListener('click', async function() {
-  var list = document.getElementById('adminDonationsList');
-  list.innerHTML = '<div style="text-align:center;color:#888;padding:12px;">Загрузка...</div>';
-
-  try {
-    var res = await supabase
-      .from('donation_requests')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
-
-    if (res.error) {
-      list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">' + res.error.message + '</div>';
-      return;
-    }
-
-    if (!res.data || res.data.length === 0) {
-      list.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">Нет новых заявок</div>';
-      return;
-    }
-
-    list.innerHTML = res.data.map(function(r) {
-      return '<div class="admin-user-row" data-req="' + r.id + '">' +
-        '<span class="u-id">ID ' + r.user_id + '</span>' +
-        '<span class="u-name">' + r.stars + ' ⭐ → ' + fmt(r.amount) + ' ₽</span>' +
-        '<span class="u-actions">' +
-          '<button class="admin-mini-btn" data-approve="' + r.id + '" data-user="' + r.user_id + '" data-amount="' + r.amount + '" style="background:#16a34a;color:#fff;">✓</button>' +
-          '<button class="admin-mini-btn" data-reject="' + r.id + '" style="background:#dc2626;color:#fff;">✕</button>' +
-        '</span>' +
-      '</div>';
-    }).join('');
-
-    list.querySelectorAll('[data-approve]').forEach(function(btn) {
-      btn.addEventListener('click', async function() {
-        var reqId = parseInt(btn.dataset.approve);
-        var uid = parseInt(btn.dataset.user);
-        var amount = parseInt(btn.dataset.amount);
-
-        var userRes = await supabase.from('users').select('balance').eq('id', uid).maybeSingle();
-        if (userRes.error || !userRes.data) {
-          alert('Юзер не найден');
-          return;
-        }
-
-        var newBalance = (userRes.data.balance || 0) + amount;
-        await supabase.from('users').update({ balance: newBalance }).eq('id', uid);
-        await supabase.from('donation_requests').update({ status: 'approved' }).eq('id', reqId);
-
-        btn.closest('.admin-user-row').remove();
-      });
-    });
-
-    list.querySelectorAll('[data-reject]').forEach(function(btn) {
-      btn.addEventListener('click', async function() {
-        var reqId = parseInt(btn.dataset.reject);
-        await supabase.from('donation_requests').update({ status: 'rejected' }).eq('id', reqId);
-        btn.closest('.admin-user-row').remove();
-      });
-    });
-
-  } catch (e) {
-    list.innerHTML = '<div style="color:#ff6b6b;text-align:center;padding:12px;">' + e.message + '</div>';
-  }
 });
 </script>
 </body>
